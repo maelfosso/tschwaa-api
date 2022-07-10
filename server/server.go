@@ -49,6 +49,7 @@ func New(opts Options) *Server {
 	}
 }
 
+// Start the server by setting up routes and listening for HTTP request on the given address
 func (s *Server) Start() error {
 	s.setupRoutes()
 
@@ -59,6 +60,7 @@ func (s *Server) Start() error {
 	return nil
 }
 
+// Stop the Server gracefully within the timeout
 func (s *Server) Stop() error {
 	s.log.Info("Stopping")
 
