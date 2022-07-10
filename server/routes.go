@@ -1,5 +1,7 @@
 package server
 
-func (s *Server) setupRoutes() {
+import "tschwaa.com/api/handlers"
 
+func (s *Server) setupRoutes() {
+	handlers.Health(s.mux)
 }
