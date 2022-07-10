@@ -1,6 +1,9 @@
 package server
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strconv"
@@ -44,4 +47,27 @@ func New(opts Options) *Server {
 			IdleTimeout:       5 * time.Second,
 		},
 	}
+}
+
+func (s *Server) Start() error {
+	s.setupRoutes()
+
+	s.log.Info("Starting on", zap.String("address", s.address))
+	if err := s.server.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		return fmt.Errorf("error starting server: %w", err)
+	}
+	return nil
+}
+
+func (s *Server) Stop() error {
+	s.log.Info("Stopping")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := s.server.Shutdown(ctx); err != nil {
+		return fmt.Errorf("error stopping server: %w", err)
+	}
+
+	return nil
 }
