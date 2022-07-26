@@ -19,12 +19,16 @@ var emailAddressMatcher = regexp.MustCompile(
 )
 
 type User struct {
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
-	// Country   string `json:"country"`
-	Phone    string `json:"phone"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID        string `json:"id,omitempty"`
+	Firstname string `json:"firstname,omitempty"`
+	Lastname  string `json:"lastname,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Password  string `json:"-"`
+	Token     string `json:"-"`
+
+	CreatedAt string `json:"createdAt,omitempty"`
+	UpdatedAt string `json:"updatedAt,omitempty"`
 }
 
 func (u *User) IsValid() bool {
