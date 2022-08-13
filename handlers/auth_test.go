@@ -20,9 +20,9 @@ type signupperMock struct {
 	user model.User
 }
 
-func (s *signupperMock) Signup(ctx context.Context, user model.User) error {
+func (s *signupperMock) Signup(ctx context.Context, user model.User) (string, error) {
 	s.user = user
-	return nil
+	return "token", nil
 }
 
 func TestSignup(t *testing.T) {
@@ -31,10 +31,16 @@ func TestSignup(t *testing.T) {
 	handlers.Signup(mux, s)
 
 	t.Run("signs up", func(t *testing.T) {
-		var jsonBody = `{"firstname":"john","lastname":"doe","email":"john.doe@mail.com","phone":"69032","password":"xwfwe"}`
+		var jsonBody = `{
+			"firstname":"john",
+			"lastname":"doe",
+			"email":"john.doe@mail.com",
+			"phone":"69032",
+			"password":"xwfwe"
+		}`
 		is := is.New(t)
 		code, resBody := makePostRequest(mux, "/auth/signup", strings.NewReader(jsonBody))
-		is.Equal(http.StatusOK, code)
+		is.Equal(http.StatusCreated, code)
 		is.Equal(strings.TrimSpace(resBody), strconv.FormatBool(true))
 
 		decoder := json.NewDecoder(strings.NewReader(jsonBody))

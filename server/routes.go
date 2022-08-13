@@ -12,7 +12,7 @@ type signupperMock struct{}
 func (s *Server) setupRoutes() {
 	handlers.Health(s.mux)
 
-	handlers.Signup(s.mux, &signupperMock{})
+	handlers.Signup(s.mux, s.database)
 }
 
 func (s signupperMock) Signup(ctx context.Context, user model.User) error {

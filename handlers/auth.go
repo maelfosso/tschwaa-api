@@ -10,7 +10,7 @@ import (
 )
 
 type signupper interface {
-	Signup(ctx context.Context, user model.User) error
+	Signup(ctx context.Context, user model.User) (string, error)
 }
 
 func Signup(mux chi.Router, s signupper) {
@@ -28,13 +28,13 @@ func Signup(mux chi.Router, s signupper) {
 			return
 		}
 
-		if err := s.Signup(r.Context(), user); err != nil {
+		if _, err := s.Signup(r.Context(), user); err != nil {
 			http.Error(w, "error signing user, try again", http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
+		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(true); err != nil {
 			http.Error(w, "error encoding the result", http.StatusBadRequest)
 			return

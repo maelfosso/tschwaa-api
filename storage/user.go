@@ -44,7 +44,7 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 	}
 	user.Password = hashedPassword
 
-	// Get the token
+	// Get the token - Next will have token for email and token for sms
 	token, err := createSecret()
 	if err != nil {
 		return "", err
