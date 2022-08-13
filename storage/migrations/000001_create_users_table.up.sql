@@ -1,11 +1,11 @@
 CREATE TABLE IF NOT EXISTS users(
   id Integer Primary Key Generated Always as Identity,
-  firstname VARCHAR(300),
-  lastname VARCHAR(300),
+  firstname TEXT NOT NULL,
+  lastname TEXT NOT NULL,
   phone VARCHAR(15) UNIQUE NOT NULL,
-  email VARCHAR (50) UNIQUE NOT NULL,
-  password VARCHAR (50) NOT NULL,
-  token VARCHAR(100) NOT NULL,
-  createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
-  updatedAt TIMESTAMP NOT NULL DEFAULT NOW()
+  email TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  token TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
