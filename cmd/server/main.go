@@ -7,10 +7,12 @@ import (
 	"os/signal"
 	"strconv"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"tschwaa.com/api/server"
+	"tschwaa.com/api/storage"
 )
 
 // release is set through the linker at build time, generally from a git sha.
@@ -41,9 +43,10 @@ func start() int {
 	port := getIntOrDefault("PORT", 8080)
 
 	s := server.New(server.Options{
-		Host: host,
-		Port: port,
-		Log:  log,
+		Database: createDatabase(log),
+		Host:     host,
+		Port:     port,
+		Log:      log,
 	})
 
 	var eg errgroup.Group
@@ -82,6 +85,20 @@ func createLogger(env string) (*zap.Logger, error) {
 	}
 }
 
+func createDatabase(log *zap.Logger) *storage.Database {
+	return storage.NewDatabase(storage.NewDatabaseOptions{
+		Host:                  getStringOrDefault("DB_HOST", "localhost"),
+		Port:                  getIntOrDefault("DB_PORT", 5433),
+		User:                  getStringOrDefault("DB_USER", "schwaa"),
+		Password:              getStringOrDefault("DB_PASSWORD", "123"),
+		Name:                  getStringOrDefault("DB_NAME", "schwaa"),
+		MaxOpenConnections:    getIntOrDefault("DB_MAX_OPEN_CONNECTION", 10),
+		MaxIdleConnections:    getIntOrDefault("DB_MAX_OPEN_CONNECTION", 10),
+		ConnectionMaxLifetime: getDurationOrDefault("DB_CONNECTION_MAX_LIFETIME", time.Hour),
+		Log:                   log,
+	})
+}
+
 func getStringOrDefault(name, defaultV string) string {
 	v, ok := os.LookupEnv(name)
 	if !ok {
@@ -101,4 +118,16 @@ func getIntOrDefault(name string, defaultV int) int {
 		return defaultV
 	}
 	return vAsInt
+}
+
+func getDurationOrDefault(name string, defaultV time.Duration) time.Duration {
+	v, ok := os.LookupEnv(name)
+	if !ok {
+		return defaultV
+	}
+	vAsDuration, err := time.ParseDuration(v)
+	if err != nil {
+		return defaultV
+	}
+	return vAsDuration
 }
