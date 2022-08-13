@@ -1,10 +1,7 @@
 package server
 
 import (
-	"context"
-
 	"tschwaa.com/api/handlers"
-	"tschwaa.com/api/model"
 )
 
 type signupperMock struct{}
@@ -12,9 +9,9 @@ type signupperMock struct{}
 func (s *Server) setupRoutes() {
 	handlers.Health(s.mux)
 
+	// Auth
 	handlers.Signup(s.mux, s.database)
-}
 
-func (s signupperMock) Signup(ctx context.Context, user model.User) error {
-	return nil
+	// Organization
+	handlers.CreateOrganization(s.mux, s.database)
 }
