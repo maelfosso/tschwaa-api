@@ -3,6 +3,7 @@ package model
 import (
 	"regexp"
 	"strings"
+	"time"
 	"unicode"
 )
 
@@ -19,16 +20,16 @@ var emailAddressMatcher = regexp.MustCompile(
 )
 
 type User struct {
-	ID        string `json:"id,omitempty"`
+	ID        int    `json:"id,omitempty"`
 	Firstname string `json:"firstname,omitempty"`
 	Lastname  string `json:"lastname,omitempty"`
 	Phone     string `json:"phone,omitempty"`
 	Email     string `json:"email,omitempty"`
-	Password  string `json:"-"`
+	Password  string `json:"password,omitempty"`
 	Token     string `json:"-"`
 
-	CreatedAt string `json:"createdAt,omitempty"`
-	UpdatedAt string `json:"updatedAt,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 func (u *User) IsValid() bool {
@@ -46,8 +47,8 @@ func (u *User) IsValid() bool {
 	}
 
 	var phone string = u.Phone
-	if strings.HasPrefix(u.Phone, "+") {
-		phone = u.Phone[1:len(u.Phone)]
+	if strings.HasPrefix(phone, "+") {
+		phone = phone[1:len(phone)]
 	}
 	for _, r := range phone {
 		if !unicode.IsDigit(r) {
