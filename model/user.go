@@ -5,6 +5,9 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/dgrijalva/jwt-go"
+	"golang.org/x/crypto/bcrypt"
 )
 
 var emailAddressMatcher = regexp.MustCompile(
@@ -57,4 +60,36 @@ func (u *User) IsValid() bool {
 	}
 
 	return true
+}
+
+func (u *User) HashPassword() error {
+	var passwordBytes = []byte(u.Password)
+
+	// Hash password with Bcrypt MinCost
+	hashedPassword, err := bcrypt.GenerateFromPassword(passwordBytes, bcrypt.MinCost)
+	if err != nil {
+		return nil
+	}
+
+	// Cast the hashedPassword to string
+	u.Password = string(hashedPassword)
+	return nil
+}
+
+func (u *User) IsPasswordMatched(currentPassword string) bool {
+	err := bcrypt.CompareHashAndPassword(
+		[]byte(u.Password),
+		[]byte(currentPassword),
+	)
+	return err == nil
+}
+
+type SignInCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type JwtClaims struct {
+	User User
+	jwt.StandardClaims
 }
