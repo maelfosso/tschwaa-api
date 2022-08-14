@@ -11,6 +11,7 @@ import (
 
 type signupper interface {
 	Signup(ctx context.Context, user model.User) (string, error)
+	Signin(ctx context.Context, credentials model.SignInCredentials) (string, error)
 }
 
 func Signup(mux chi.Router, s signupper) {
@@ -29,7 +30,7 @@ func Signup(mux chi.Router, s signupper) {
 		}
 
 		if _, err := s.Signup(r.Context(), user); err != nil {
-			http.Error(w, "error signing user, try again", http.StatusBadRequest)
+			http.Error(w, "error creating user, try again", http.StatusBadRequest)
 			return
 		}
 
@@ -37,6 +38,31 @@ func Signup(mux chi.Router, s signupper) {
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(true); err != nil {
 			http.Error(w, "error encoding the result", http.StatusBadRequest)
+			return
+		}
+	})
+}
+
+func Signin(mux chi.Router, s signupper) {
+	mux.Post("/auth/signin", func(w http.ResponseWriter, r *http.Request) {
+		decoder := json.NewDecoder(r.Body)
+
+		var credenials model.SignInCredentials
+		if err := decoder.Decode(&credenials); err != nil {
+			http.Error(w, "error decoding credentials", http.StatusBadRequest)
+			return
+		}
+
+		jwtToken, err := s.Signin(r.Context(), credenials)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(jwtToken); err != nil {
+			http.Error(w, "error enconding the result", http.StatusBadRequest)
 			return
 		}
 	})
