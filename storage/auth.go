@@ -44,20 +44,22 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 
 func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (string, error) {
 	// Check if the user exists
-	var user model.User
+	var user = model.User{
+		Password: credentials.Password,
+	}
 	var hashedPassword string
 
 	query := `
 		SELECT id, firstname, lastname, phone, email, password
 		FROM users
-		WHERE (phone == $1) OR (email == $1)
+		WHERE (phone = $1) OR (email = $1)
 	`
 	err := d.DB.QueryRowContext(ctx, query, credentials.Username).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &hashedPassword)
 	if err != nil {
 		return "", fmt.Errorf("user with that username does not exist")
 	}
 
-	if !user.IsPasswordMatched(credentials.Password) {
+	if !user.IsPasswordMatched(hashedPassword) {
 		return "", fmt.Errorf("the password is not correct")
 	}
 

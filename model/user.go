@@ -78,8 +78,8 @@ func (u *User) HashPassword() error {
 
 func (u *User) IsPasswordMatched(currentPassword string) bool {
 	err := bcrypt.CompareHashAndPassword(
-		[]byte(u.Password),
 		[]byte(currentPassword),
+		[]byte(u.Password),
 	)
 	return err == nil
 }

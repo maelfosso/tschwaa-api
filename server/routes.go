@@ -16,10 +16,12 @@ func (s *Server) setupRoutes() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+
 	handlers.Health(s.mux)
 
 	// Auth
 	handlers.Signup(s.mux, s.database)
+	handlers.Signin(s.mux, s.database)
 
 	// Organization
 	handlers.CreateOrganization(s.mux, s.database)
