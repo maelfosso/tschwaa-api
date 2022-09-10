@@ -1,0 +1,23 @@
+FROM golang:1-bullseye AS builder
+# Set necessary environmet variables needed for our image
+ENV GO111MODULE=on \
+  CGO_ENABLED=0 \
+  GOOS=linux \
+  GOARCH=amd64
+
+WORKDIR /src
+COPY build build
+ENTRYPOINT [ "/src/build/main" ]
+
+# COPY go.mod go.sum ./
+# RUN go mod download -x
+
+# COPY . ./
+
+# RUN go get github.com/githubnemo/CompileDaemon
+
+
+# ENV PORT 6000
+# EXPOSE 6000
+
+# ENTRYPOINT [ "./bin/entry.sh" ]
