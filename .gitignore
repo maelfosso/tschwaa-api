@@ -22,3 +22,5 @@ go.work
 
 # Visual Studio Code
 .vscode
+
+build/
