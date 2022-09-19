@@ -2,8 +2,12 @@ POSTGRESQL_URL=postgres://schwaa:123@localhost:5433/schwaa?sslmode=disable
 
 .PHONY: build cover start test test-integration
 
+compile:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o build/main cmd/server/*
+
 build:
-	docker build -t golangdk-canvas .
+	docker build -t tschwaa-api .
+
 cover:
 	go tool cover -html=cover.out
 
