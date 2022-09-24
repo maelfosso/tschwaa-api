@@ -1,4 +1,4 @@
-POSTGRESQL_URL=postgres://schwaa:123@localhost:5433/schwaa?sslmode=disable
+POSTGRESQL_URL=postgres://schwaa:123@localhost:5434/tschwaa?sslmode=disable
 
 .PHONY: build cover start test test-integration
 
