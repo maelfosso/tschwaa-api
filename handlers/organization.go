@@ -14,7 +14,7 @@ type createorg interface {
 }
 
 func CreateOrganization(mux chi.Router, o createorg) {
-	mux.Post("/org", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/orgs", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
 		var org model.Organization
@@ -38,6 +38,17 @@ func CreateOrganization(mux chi.Router, o createorg) {
 		w.WriteHeader(http.StatusCreated)
 		if err = json.NewEncoder(w).Encode(orgId); err != nil {
 			http.Error(w, "error when encoding the request response", http.StatusBadRequest)
+			return
+		}
+	})
+}
+
+func ListOrganizations(mux chi.Router) {
+	mux.Get("/orgs", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode("All the Organizations"); err != nil {
+			http.Error(w, "error when encoding all the organizations", http.StatusBadRequest)
 			return
 		}
 	})

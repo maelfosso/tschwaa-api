@@ -47,6 +47,7 @@ func (s *Server) setupRoutes() {
 
 	// Organization
 	handlers.CreateOrganization(s.mux, s.database)
+	handlers.ListOrganizations(s.mux)
 }
 
 func (s *Server) requestLoggerMiddleware(next http.Handler) http.Handler {
