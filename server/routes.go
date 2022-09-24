@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
+	"github.com/maelfosso/jwtauth"
 	"go.uber.org/zap"
 	"tschwaa.com/api/handlers"
 )
@@ -51,6 +52,10 @@ func (s *Server) setupRoutes() {
 	})
 
 	s.mux.Group(func(r chi.Router) {
+		tokenAuth := jwtauth.New("HS512", []byte("schwaa"), nil)
+		s.mux.Use(jwtauth.Verifier(tokenAuth))
+
+		s.mux.Use(jwtauth.Authenticator)
 
 		// Organization
 		s.mux.Route("/orgs", func(r chi.Router) {

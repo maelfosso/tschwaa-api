@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/fatih/structs"
+	"github.com/maelfosso/jwtauth"
 	"tschwaa.com/api/model"
 )
 
@@ -64,19 +66,23 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 	}
 
 	user.Password = ""
-	claims := jwt.NewWithClaims(jwt.SigningMethodHS512, model.JwtClaims{
-		User: user,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 5).Unix(),
-		},
-	})
+	tokenAuth := jwtauth.New("HS512", []byte("schwaa"), nil)
+	_, tokenString, _ := tokenAuth.Encode(structs.Map(&user))
 
-	token, err := claims.SignedString([]byte(JwtKey))
+	return tokenString, nil
+	// claims := jwt.NewWithClaims(jwt.SigningMethodHS512, model.JwtClaims{
+	// 	User: user,
+	// 	StandardClaims: jwt.StandardClaims{
+	// 		ExpiresAt: time.Now().Add(time.Hour * 5).Unix(),
+	// 	},
+	// })
 
-	if err != nil {
-		return "", fmt.Errorf("could not generate jwt token")
-	}
-	return token, nil
+	// token, err := claims.SignedString([]byte(JwtKey))
+
+	// if err != nil {
+	// 	return "", fmt.Errorf("could not generate jwt token")
+	// }
+	// return token, nil
 }
 
 func (d *Database) VerifyToken(signedToken string) (*model.User, error) {
