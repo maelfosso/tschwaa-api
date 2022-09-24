@@ -15,7 +15,7 @@ type signupper interface {
 }
 
 func Signup(mux chi.Router, s signupper) {
-	mux.Post("/auth/signup", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
 		var user model.User
@@ -44,7 +44,7 @@ func Signup(mux chi.Router, s signupper) {
 }
 
 func Signin(mux chi.Router, s signupper) {
-	mux.Post("/auth/signin", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/signin", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
 		var credenials model.SignInCredentials

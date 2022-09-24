@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"go.uber.org/zap"
 	"tschwaa.com/api/handlers"
@@ -39,15 +40,24 @@ func (s *Server) setupRoutes() {
 		MaxAge:           300,
 	}))
 
-	handlers.Health(s.mux)
+	s.mux.Group(func(r chi.Router) {
+		handlers.Health(s.mux)
 
-	// Auth
-	handlers.Signup(s.mux, s.database)
-	handlers.Signin(s.mux, s.database)
+		s.mux.Route("/auth/", func(r chi.Router) {
+			// Auth
+			handlers.Signup(s.mux, s.database)
+			handlers.Signin(s.mux, s.database)
+		})
+	})
 
-	// Organization
-	handlers.CreateOrganization(s.mux, s.database)
-	handlers.ListOrganizations(s.mux)
+	s.mux.Group(func(r chi.Router) {
+
+		// Organization
+		s.mux.Route("/orgs", func(r chi.Router) {
+			handlers.CreateOrganization(s.mux, s.database)
+			handlers.ListOrganizations(s.mux)
+		})
+	})
 }
 
 func (s *Server) requestLoggerMiddleware(next http.Handler) http.Handler {

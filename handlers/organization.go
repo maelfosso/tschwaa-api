@@ -14,7 +14,7 @@ type createorg interface {
 }
 
 func CreateOrganization(mux chi.Router, o createorg) {
-	mux.Post("/orgs", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
 		var org model.Organization
