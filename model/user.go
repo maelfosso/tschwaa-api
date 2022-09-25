@@ -28,8 +28,8 @@ type User struct {
 	Lastname  string `json:"lastname,omitempty"`
 	Phone     string `json:"phone,omitempty"`
 	Email     string `json:"email,omitempty"`
-	Password  string `json:"password,omitempty"`
-	Token     string `json:"-"`
+	Password  string `json:"-"`
+	Token     string `json:"access_token"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`

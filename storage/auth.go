@@ -44,7 +44,7 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 	return token, err
 }
 
-func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (string, error) {
+func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.User, error) {
 	// Check if the user exists
 	var user = model.User{
 		Password: credentials.Password,
@@ -58,31 +58,19 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 	`
 	err := d.DB.QueryRowContext(ctx, query, credentials.Username).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &hashedPassword)
 	if err != nil {
-		return "", fmt.Errorf("user with that username does not exist")
+		return nil, fmt.Errorf("user with that username does not exist")
 	}
 
 	if !user.IsPasswordMatched(hashedPassword) {
-		return "", fmt.Errorf("the password is not correct")
+		return nil, fmt.Errorf("the password is not correct")
 	}
 
 	user.Password = ""
 	tokenAuth := jwtauth.New("HS512", []byte("schwaa"), nil)
 	_, tokenString, _ := tokenAuth.Encode(structs.Map(&user))
 
-	return tokenString, nil
-	// claims := jwt.NewWithClaims(jwt.SigningMethodHS512, model.JwtClaims{
-	// 	User: user,
-	// 	StandardClaims: jwt.StandardClaims{
-	// 		ExpiresAt: time.Now().Add(time.Hour * 5).Unix(),
-	// 	},
-	// })
-
-	// token, err := claims.SignedString([]byte(JwtKey))
-
-	// if err != nil {
-	// 	return "", fmt.Errorf("could not generate jwt token")
-	// }
-	// return token, nil
+	user.Token = tokenString
+	return &user, nil
 }
 
 func (d *Database) VerifyToken(signedToken string) (*model.User, error) {

@@ -11,7 +11,7 @@ import (
 
 type signupper interface {
 	Signup(ctx context.Context, user model.User) (string, error)
-	Signin(ctx context.Context, credentials model.SignInCredentials) (string, error)
+	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.User, error)
 }
 
 func Signup(mux chi.Router, s signupper) {
@@ -53,7 +53,7 @@ func Signin(mux chi.Router, s signupper) {
 			return
 		}
 
-		jwtToken, err := s.Signin(r.Context(), credenials)
+		user, err := s.Signin(r.Context(), credenials)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
@@ -61,7 +61,7 @@ func Signin(mux chi.Router, s signupper) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(jwtToken); err != nil {
+		if err := json.NewEncoder(w).Encode(user); err != nil {
 			http.Error(w, "error enconding the result", http.StatusBadRequest)
 			return
 		}
