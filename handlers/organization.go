@@ -3,9 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/maelfosso/jwtauth"
 	"tschwaa.com/api/model"
 )
 
@@ -44,7 +46,11 @@ func CreateOrganization(mux chi.Router, o createorg) {
 }
 
 func ListOrganizations(mux chi.Router) {
-	mux.Get("/orgs", func(w http.ResponseWriter, r *http.Request) {
+	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
+
+		_, claims, _ := jwtauth.FromContext(r.Context())
+		fmt.Println("JWT Claims - ", claims)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode("All the Organizations"); err != nil {

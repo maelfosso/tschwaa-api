@@ -9,6 +9,7 @@ import (
 	"github.com/maelfosso/jwtauth"
 	"go.uber.org/zap"
 	"tschwaa.com/api/handlers"
+	"tschwaa.com/api/services"
 )
 
 type signupperMock struct{}
@@ -42,25 +43,23 @@ func (s *Server) setupRoutes() {
 	}))
 
 	s.mux.Group(func(r chi.Router) {
-		handlers.Health(s.mux)
+		r.Use(jwtauth.Verifier(services.TokenAuth))
+		r.Use(jwtauth.Authenticator)
 
-		s.mux.Route("/auth/", func(r chi.Router) {
-			// Auth
-			handlers.Signup(s.mux, s.database)
-			handlers.Signin(s.mux, s.database)
+		// Organization
+		r.Route("/orgs", func(r chi.Router) {
+			handlers.CreateOrganization(r, s.database)
+			handlers.ListOrganizations(r)
 		})
 	})
 
 	s.mux.Group(func(r chi.Router) {
-		tokenAuth := jwtauth.New("HS512", []byte("schwaa"), nil)
-		s.mux.Use(jwtauth.Verifier(tokenAuth))
+		handlers.Health(s.mux)
 
-		s.mux.Use(jwtauth.Authenticator)
-
-		// Organization
-		s.mux.Route("/orgs", func(r chi.Router) {
-			handlers.CreateOrganization(s.mux, s.database)
-			handlers.ListOrganizations(s.mux)
+		r.Route("/auth/", func(r chi.Router) {
+			// Auth
+			handlers.Signup(r, s.database)
+			handlers.Signin(r, s.database)
 		})
 	})
 }

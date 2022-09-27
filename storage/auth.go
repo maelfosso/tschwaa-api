@@ -4,15 +4,11 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/fatih/structs"
-	"github.com/maelfosso/jwtauth"
 	"tschwaa.com/api/model"
+	"tschwaa.com/api/services"
 )
-
-var JwtKey string = "schwaa"
 
 func createSecret() (string, error) {
 	secret := make([]byte, 32)
@@ -66,33 +62,8 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 	}
 
 	user.Password = ""
-	tokenAuth := jwtauth.New("HS512", []byte("schwaa"), nil)
-	_, tokenString, _ := tokenAuth.Encode(structs.Map(&user))
 
+	_, tokenString, _ := services.TokenAuth.Encode(structs.Map(&user))
 	user.Token = tokenString
 	return &user, nil
-}
-
-func (d *Database) VerifyToken(signedToken string) (*model.User, error) {
-	token, err := jwt.ParseWithClaims(
-		signedToken,
-		&model.JwtClaims{},
-		func(t *jwt.Token) (interface{}, error) {
-			return []byte(JwtKey), nil
-		},
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	claims, ok := token.Claims.(*model.JwtClaims)
-	if !ok {
-		return nil, fmt.Errorf("couldn't parse the jwt claims")
-	}
-
-	if claims.ExpiresAt < time.Now().Local().Unix() {
-		return nil, fmt.Errorf("jwt token is expired")
-	}
-
-	return &claims.User, nil
 }
