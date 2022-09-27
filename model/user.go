@@ -84,6 +84,14 @@ func (u *User) IsPasswordMatched(currentPassword string) bool {
 	return err == nil
 }
 
+type SignUpCredentials struct {
+	Firstname string `json:"firstname,omitempty"`
+	Lastname  string `json:"lastname,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Password  string `json:"password,omitempty"`
+}
+
 type SignInCredentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`

@@ -18,12 +18,18 @@ func Signup(mux chi.Router, s signupper) {
 	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var user model.User
-		if err := decoder.Decode(&user); err != nil {
+		var data model.SignUpCredentials
+		if err := decoder.Decode(&data); err != nil {
 			http.Error(w, "error decoding the user model", http.StatusBadRequest)
 			return
 		}
 
+		var user model.User
+		user.Firstname = data.Firstname
+		user.Lastname = data.Lastname
+		user.Password = data.Password
+		user.Phone = data.Phone
+		user.Email = data.Email
 		if !user.IsValid() {
 			http.Error(w, "user is invalid", http.StatusBadRequest)
 			return
