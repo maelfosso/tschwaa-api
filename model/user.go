@@ -97,6 +97,12 @@ type SignInCredentials struct {
 	Password string `json:"password"`
 }
 
+type SignInResult struct {
+	Name  string `json:"name",omitempty`
+	Email string `json:"email",omitempty`
+	Token string `json:"access_token",omitempty`
+}
+
 type JwtClaims struct {
 	User User
 	jwt.StandardClaims

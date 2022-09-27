@@ -40,7 +40,7 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 	return token, err
 }
 
-func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.User, error) {
+func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error) {
 	// Check if the user exists
 	var user = model.User{
 		Password: credentials.Password,
@@ -63,7 +63,11 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 
 	user.Password = ""
 
-	_, tokenString, _ := services.TokenAuth.Encode(structs.Map(&user))
-	user.Token = tokenString
-	return &user, nil
+	var signInResult model.SignInResult
+	signInResult.Name = fmt.Sprintf("%s %s", user.Firstname, user.Lastname)
+	signInResult.Email = user.Email
+
+	_, tokenString, _ := services.TokenAuth.Encode(structs.Map(&signInResult))
+	signInResult.Token = tokenString
+	return &signInResult, nil
 }

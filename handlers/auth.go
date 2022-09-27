@@ -11,7 +11,7 @@ import (
 
 type signupper interface {
 	Signup(ctx context.Context, user model.User) (string, error)
-	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.User, error)
+	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error)
 }
 
 func Signup(mux chi.Router, s signupper) {
