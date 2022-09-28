@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 	"time"
 
@@ -45,6 +46,32 @@ func (s *Server) setupRoutes() {
 	s.mux.Group(func(r chi.Router) {
 		r.Use(jwtauth.Verifier(services.TokenAuth))
 		r.Use(jwtauth.Authenticator)
+
+		r.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+				_, claims, _ := jwtauth.FromContext(req.Context())
+				s.log.Info(
+					"JWT Claims",
+					// zap.String("email", fmt.Sprintf("%v", claims["email"])),
+					zap.Any("Jwt claims", claims),
+				)
+
+				user, err := s.database.FindUserByEmail(req.Context(), claims["Email"].(string))
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusUnauthorized)
+					return
+				}
+
+				s.log.Info(
+					"JWT User",
+					zap.Any("Jwt user", user),
+				)
+
+				ctx := req.Context()
+				ctx = context.WithValue(ctx, services.JwtUserKey, user)
+				next.ServeHTTP(w, req.WithContext(ctx))
+			})
+		})
 
 		// Organization
 		r.Route("/orgs", func(r chi.Router) {
