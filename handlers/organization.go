@@ -24,6 +24,9 @@ func CreateOrganization(mux chi.Router, o createorg) {
 			return
 		}
 
+		currentUser := getCurrentUser(r)
+		org.CreatedBy = currentUser.ID
+
 		if !org.IsValid() {
 			http.Error(w, "error - organization is not valid", http.StatusBadRequest)
 			return

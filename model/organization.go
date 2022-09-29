@@ -7,9 +7,10 @@ import (
 )
 
 type Organization struct {
-	ID        int    `json:"id,omitempty"`
-	Name      string `json:"name,omitempty" validate:"nonzero,nonnil"`
-	CreatedBy int    `json:"createdBy,omitempty" validate:"min=1"`
+	ID          int    `json:"id,omitempty"`
+	Name        string `json:"name,omitempty" validate:"nonzero,nonnil"`
+	Description string `json:"description,omitempty"`
+	CreatedBy   int    `json:"createdBy,omitempty" validate:"min=1"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
