@@ -21,7 +21,7 @@ test-integration:
 	go test -coverprofile=cover.out -p 1 ./...
 
 migrate-create:
-	migrate create -ext sql -dir storage/migrations -seq $(migration)
+	migrate create -ext sql -dir storage/migrations -seq $(filter-out $@,$(MAKECMDGOALS))
 
 migrate-up:
 	migrate -database ${POSTGRESQL_URL} -path storage/migrations up
