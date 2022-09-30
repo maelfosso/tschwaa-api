@@ -7,7 +7,7 @@ import (
 )
 
 type Organization struct {
-	ID          int    `json:"id,omitempty"`
+	ID          uint64 `json:"id,omitempty"`
 	Name        string `json:"name,omitempty" validate:"nonzero,nonnil"`
 	Description string `json:"description,omitempty"`
 	CreatedBy   int    `json:"createdBy,omitempty" validate:"min=1"`

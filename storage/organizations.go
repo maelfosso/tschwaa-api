@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 
 	"tschwaa.com/api/model"
 )
@@ -15,4 +17,35 @@ func (d *Database) CreateOrganization(ctx context.Context, org model.Organizatio
 	var lastInsertId int64 = 0
 	err := d.DB.QueryRowContext(ctx, query, org.Name, org.Description, org.CreatedBy).Scan(&lastInsertId)
 	return lastInsertId, err
+}
+
+func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]model.Organization, error) {
+	query := `
+		SELECT id, name, description
+		FROM organizations
+		WHERE created_by = $1
+	`
+	rows, err := d.DB.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var orgs = []model.Organization{}
+	for rows.Next() {
+		var id, name, description string
+		if err := rows.Scan(&id, &name, &description); err != nil {
+			return nil, fmt.Errorf("error when parsing the organizations result")
+		}
+
+		i, _ := strconv.ParseUint(id, 10, 64)
+		orgs = append(orgs, model.Organization{
+			ID:          i,
+			Name:        name,
+			Description: description,
+		})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error when parsing the organizations result")
+	}
+	return orgs, nil
 }

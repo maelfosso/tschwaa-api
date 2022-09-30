@@ -14,6 +14,10 @@ type createorg interface {
 	CreateOrganization(ctx context.Context, org model.Organization) (int64, error)
 }
 
+type listorg interface {
+	ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]model.Organization, error)
+}
+
 func CreateOrganization(mux chi.Router, o createorg) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
@@ -47,14 +51,20 @@ func CreateOrganization(mux chi.Router, o createorg) {
 	})
 }
 
-func ListOrganizations(mux chi.Router) {
+func ListOrganizations(mux chi.Router, o listorg) {
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("JWT Claims - ", getCurrentUser(r))
+		currentUser := getCurrentUser(r)
+		orgs, err := o.ListAllOrganizationFromUser(r.Context(), uint64(currentUser.ID))
+		if err != nil {
+			http.Error(w, "error occured when fetching the organizations", http.StatusBadRequest)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode("All the Organizations"); err != nil {
+		if err := json.NewEncoder(w).Encode(orgs); err != nil {
 			http.Error(w, "error when encoding all the organizations", http.StatusBadRequest)
 			return
 		}
