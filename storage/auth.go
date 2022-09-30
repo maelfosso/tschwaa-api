@@ -47,31 +47,18 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 }
 
 func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error) {
-	// Check if the user exists
-	var user = model.User{
-		Password: credentials.Password,
-	}
-	var hashedPassword string
-
-	query := `
-		SELECT id, firstname, lastname, phone, email, password
-		FROM users
-		WHERE (phone = $1) OR (email = $1)
-	`
-	err := d.DB.QueryRowContext(ctx, query, credentials.Username).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &hashedPassword)
+	existingUser, err := d.FindUserByUsername(ctx, credentials.Username, credentials.Username)
 	if err != nil {
 		return nil, fmt.Errorf("user with that username does not exist")
 	}
 
-	if !user.IsPasswordMatched(hashedPassword) {
+	if existingUser.IsPasswordMatched(credentials.Password) {
 		return nil, fmt.Errorf("the password is not correct")
 	}
 
-	user.Password = ""
-
 	var signInResult model.SignInResult
-	signInResult.Name = fmt.Sprintf("%s %s", user.Firstname, user.Lastname)
-	signInResult.Email = user.Email
+	signInResult.Name = fmt.Sprintf("%s %s", existingUser.Firstname, existingUser.Lastname)
+	signInResult.Email = existingUser.Email
 
 	_, tokenString, _ := services.TokenAuth.Encode(structs.Map(&signInResult))
 	signInResult.Token = tokenString
