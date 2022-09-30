@@ -41,7 +41,7 @@ func Signup(mux chi.Router, s signupper, log *zap.Logger) {
 
 		if _, err := s.Signup(r.Context(), user); err != nil {
 			log.Info("Error SignUp", zap.Error(err))
-			http.Error(w, "error creating user, try again", http.StatusBadRequest)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 

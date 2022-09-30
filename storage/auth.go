@@ -25,6 +25,12 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 		return "", err
 	}
 
+	// Check if a user with the same email exist
+	existingUser, err := d.FindUserByUsername(ctx, user.Phone, user.Email)
+	if err != nil || existingUser != nil {
+		return "", fmt.Errorf("user with the email/phone already exists")
+	}
+
 	// Get the token - Next will have token for email and token for sms
 	token, err := createSecret()
 	if err != nil {

@@ -8,6 +8,18 @@ import (
 	"tschwaa.com/api/model"
 )
 
+func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) (*model.User, error) {
+	var user model.User
+
+	query := `
+		SELECT id, firstname, lastname, phone, email, password
+		FROM users
+		WHERE (phone = $1) OR (email = $2)
+	`
+	err := d.DB.QueryRowContext(ctx, query, phone, email).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &user.Password)
+	return &user, err
+}
+
 func (d *Database) FindUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	var user model.User
 
