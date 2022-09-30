@@ -3,9 +3,11 @@ package handlers
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
 	"tschwaa.com/api/model"
 )
 
@@ -14,7 +16,7 @@ type signupper interface {
 	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error)
 }
 
-func Signup(mux chi.Router, s signupper) {
+func Signup(mux chi.Router, s signupper, log *zap.Logger) {
 	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -30,12 +32,15 @@ func Signup(mux chi.Router, s signupper) {
 		user.Password = data.Password
 		user.Phone = data.Phone
 		user.Email = data.Email
+
 		if !user.IsValid() {
+			log.Info("Error SignUp", zap.Error(fmt.Errorf("user is invalid")))
 			http.Error(w, "user is invalid", http.StatusBadRequest)
 			return
 		}
 
 		if _, err := s.Signup(r.Context(), user); err != nil {
+			log.Info("Error SignUp", zap.Error(err))
 			http.Error(w, "error creating user, try again", http.StatusBadRequest)
 			return
 		}
@@ -43,6 +48,7 @@ func Signup(mux chi.Router, s signupper) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(true); err != nil {
+			log.Info("Error SignUp", zap.Error(err))
 			http.Error(w, "error encoding the result", http.StatusBadRequest)
 			return
 		}

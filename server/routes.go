@@ -58,7 +58,7 @@ func (s *Server) setupRoutes() {
 
 		r.Route("/auth/", func(r chi.Router) {
 			// Auth
-			handlers.Signup(r, s.database)
+			handlers.Signup(r, s.database, s.log)
 			handlers.Signin(r, s.database)
 		})
 	})
