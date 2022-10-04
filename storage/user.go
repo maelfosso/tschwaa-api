@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"go.uber.org/zap"
@@ -16,8 +17,14 @@ func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) 
 		FROM users
 		WHERE (phone = $1) OR (email = $2)
 	`
-	err := d.DB.QueryRowContext(ctx, query, phone, email).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &user.Password)
-	return &user, err
+	if err := d.DB.QueryRowContext(ctx, query, phone, email).Scan(&user.ID, &user.Firstname, &user.Lastname, &user.Phone, &user.Email, &user.Password); err == nil {
+		return &user, nil
+	} else if err == sql.ErrNoRows {
+		return nil, nil
+	} else {
+		d.log.Info("Error FindUserByUsername ", zap.Error(err))
+		return nil, err
+	}
 }
 
 func (d *Database) FindUserByEmail(ctx context.Context, email string) (*model.User, error) {
