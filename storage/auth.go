@@ -48,7 +48,7 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 
 func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error) {
 	existingUser, err := d.FindUserByUsername(ctx, credentials.Username, credentials.Username)
-	if err != nil {
+	if err != nil || existingUser == nil {
 		return nil, fmt.Errorf("user with that username does not exist")
 	}
 

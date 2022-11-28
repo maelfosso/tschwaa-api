@@ -49,3 +49,20 @@ func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) (
 	}
 	return orgs, nil
 }
+
+func (d *Database) GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error) {
+	var org model.Organization
+
+	query := `
+		SELECT id, name, description, created_at
+		FROM organizations
+		WHERE id = $1
+	`
+	if err := d.DB.QueryRowContext(ctx, query, orgId).Scan(&org.ID, &org.Name, &org.Description, &org.CreatedAt); err == nil {
+		return &org, nil
+		// } else if err == sql.ErrNoRows {
+		// 	return nil, fmt.Errorf("organization does not exist")
+	} else {
+		return nil, err
+	}
+}

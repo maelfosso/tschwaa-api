@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"time"
@@ -77,6 +78,7 @@ func (u *User) HashPassword() error {
 }
 
 func (u *User) IsPasswordMatched(currentPassword string) bool {
+	fmt.Println("IsPASSWORDMATCHED ", u, currentPassword)
 	err := bcrypt.CompareHashAndPassword(
 		[]byte(currentPassword),
 		[]byte(u.Password),
