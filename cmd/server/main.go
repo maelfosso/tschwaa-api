@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"tschwaa.com/api/server"
@@ -18,6 +19,10 @@ import (
 // release is set through the linker at build time, generally from a git sha.
 // Used for logging and error reporting
 var release string
+
+func init() {
+	godotenv.Load()
+}
 
 func main() {
 	os.Exit(start())
@@ -88,10 +93,10 @@ func createLogger(env string) (*zap.Logger, error) {
 func createDatabase(log *zap.Logger) *storage.Database {
 	return storage.NewDatabase(storage.NewDatabaseOptions{
 		Host:                  getStringOrDefault("DB_HOST", "localhost"),
-		Port:                  getIntOrDefault("DB_PORT", 5433),
-		User:                  getStringOrDefault("DB_USER", "schwaa"),
-		Password:              getStringOrDefault("DB_PASSWORD", "123"),
-		Name:                  getStringOrDefault("DB_NAME", "schwaa"),
+		Port:                  getIntOrDefault("DB_PORT", 5432),
+		User:                  getStringOrDefault("DB_USER", "tschwaa"),
+		Password:              getStringOrDefault("DB_PASSWORD", "tschwaa"),
+		Name:                  getStringOrDefault("DB_NAME", "tschwaa"),
 		MaxOpenConnections:    getIntOrDefault("DB_MAX_OPEN_CONNECTION", 10),
 		MaxIdleConnections:    getIntOrDefault("DB_MAX_OPEN_CONNECTION", 10),
 		ConnectionMaxLifetime: getDurationOrDefault("DB_CONNECTION_MAX_LIFETIME", time.Hour),

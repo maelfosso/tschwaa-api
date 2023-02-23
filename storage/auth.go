@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/fatih/structs"
+	"go.uber.org/zap"
 	"tschwaa.com/api/model"
 	"tschwaa.com/api/services"
 )
@@ -59,8 +60,28 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 	var signInResult model.SignInResult
 	signInResult.Name = fmt.Sprintf("%s %s", existingUser.Firstname, existingUser.Lastname)
 	signInResult.Email = existingUser.Email
+	// d.log.Info("Sign In Result", zap.Any("sign-i n-r", signInResult))
+	// d.log.Info("JWT Secret", zap.String("secret", os.Getenv("JWT_SECRET")))
 
-	_, tokenString, _ := services.TokenAuth.Encode(structs.Map(&signInResult))
+	// res := jwtauth.New("HS256", []byte(os.Getenv("JWT_SECRET")), nil)
+	// d.log.Info("INstances", zap.Any("res", res), zap.Any("tokenauth", services.TokenAuth))
+
+	// _, ts, te := res.Encode((structs.Map(&signInResult)))
+	// d.log.Info("JWT GetOS", zap.Any("Os Getenv x2", ts), zap.Error(te))
+
+	// _, rt, re := services.TokenAuth.Encode(map[string]interface{}{"user_id": 123})
+	// d.log.Info("JWT GetOS x2", zap.Any("Os Getenv x2", rt), zap.Error(re))
+
+	// d.log.Info("Struct Map", zap.Any("map sir", structs.Map(&signInResult)), zap.Any("jwt", services.TokenAuth))
+	// t, tokenString, err := services.TokenAuth.Encode(map[string]interface{}{"user_id": 123}) // (structs.Map(&signInResult))
+
+	// _, tokenString, err := res.Encode(structs.Map(&signInResult)) // (structs.Map(&signInResult))
+	tokenString, err := services.GenerateJWTToken(structs.Map(&signInResult))
+	if err != nil {
+		return nil, err
+	}
+
+	d.log.Info("Sign In Token", zap.String("token", tokenString), zap.Any("jwt token", tokenString), zap.Error(err))
 	signInResult.Token = tokenString
 	return &signInResult, nil
 }

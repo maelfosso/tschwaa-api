@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -81,8 +82,10 @@ func GetOrganization(mux chi.Router, o getorg) {
 	mux.Get("/{orgID}", func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID: ", orgId)
 
 		org, err := o.GetOrganization(r.Context(), orgId)
+		log.Println("Get Organization ", org, err)
 		if err != nil {
 			if err == sql.ErrNoRows {
 				http.Error(w, "that organization does not exist", http.StatusBadRequest)

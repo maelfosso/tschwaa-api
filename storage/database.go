@@ -72,7 +72,7 @@ func (d *Database) createDataSourceName(withPassword bool) string {
 
 // Connect to the database
 func (d *Database) Connect() error {
-	d.log.Info("Connecting to database", zap.String("url", d.createDataSourceName(false)))
+	d.log.Info("Connecting to database", zap.String("url", d.createDataSourceName(true)))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

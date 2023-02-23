@@ -5,7 +5,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/maelfosso/jwtauth"
 	"tschwaa.com/api/handlers"
 	"tschwaa.com/api/services"
 )
@@ -41,8 +40,8 @@ func (s *Server) setupRoutes() {
 	}))
 
 	s.mux.Group(func(r chi.Router) {
-		r.Use(jwtauth.Verifier(services.TokenAuth))
-		r.Use(jwtauth.Authenticator)
+		r.Use(services.Verifier)
+		r.Use(services.Authenticator)
 
 		r.Use(s.convertJwtTokenToUser)
 

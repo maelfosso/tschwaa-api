@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -11,12 +12,12 @@ import (
 	"tschwaa.com/api/model"
 )
 
-type signupper interface {
+type auth interface {
 	Signup(ctx context.Context, user model.User) (string, error)
 	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error)
 }
 
-func Signup(mux chi.Router, s signupper, log *zap.Logger) {
+func Signup(mux chi.Router, s auth, log *zap.Logger) {
 	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -55,8 +56,10 @@ func Signup(mux chi.Router, s signupper, log *zap.Logger) {
 	})
 }
 
-func Signin(mux chi.Router, s signupper) {
+func Signin(mux chi.Router, s auth) {
 	mux.Post("/signin", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("into /signin")
+
 		decoder := json.NewDecoder(r.Body)
 
 		var credenials model.SignInCredentials
