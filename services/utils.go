@@ -43,7 +43,7 @@ func GenerateJWTToken(data map[string]interface{}) (string, error) {
 
 	now := time.Now().UTC()
 	claims := token.Claims.(jwt.MapClaims)
-	claims["exp"] = now.Add(60 * time.Minute).Unix()
+	claims["exp"] = now.Add(60 * time.Hour).Unix()
 	claims["iat"] = now.Unix()
 	claims["nbf"] = now.Unix()
 	// claims["authorized"] = true
