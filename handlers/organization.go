@@ -13,19 +13,23 @@ import (
 	"tschwaa.com/api/model"
 )
 
-type createorg interface {
+type createOrg interface {
 	CreateOrganization(ctx context.Context, org model.Organization) (int64, error)
 }
 
-type listorg interface {
+type listOrg interface {
 	ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]model.Organization, error)
 }
 
-type getorg interface {
+type getOrg interface {
 	GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error)
 }
 
-func CreateOrganization(mux chi.Router, o createorg) {
+type getOrgMembers interface {
+	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]model.Member, error)
+}
+
+func CreateOrganization(mux chi.Router, o createOrg) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
@@ -58,7 +62,7 @@ func CreateOrganization(mux chi.Router, o createorg) {
 	})
 }
 
-func ListOrganizations(mux chi.Router, o listorg) {
+func ListOrganizations(mux chi.Router, o listOrg) {
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 
 		fmt.Println("JWT Claims - ", getCurrentUser(r))
@@ -78,8 +82,8 @@ func ListOrganizations(mux chi.Router, o listorg) {
 	})
 }
 
-func GetOrganization(mux chi.Router, o getorg) {
-	mux.Get("/{orgID}", func(w http.ResponseWriter, r *http.Request) {
+func GetOrganization(mux chi.Router, o getOrg) {
+	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID: ", orgId)
@@ -99,6 +103,31 @@ func GetOrganization(mux chi.Router, o getorg) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(org); err != nil {
+			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
+			return
+		}
+	})
+}
+
+func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
+	mux.Get("/members", func(w http.ResponseWriter, r *http.Request) {
+		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID: ", orgId)
+
+		members, err := o.GetOrganizationMembers(r.Context(), orgId)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				members = []model.Member{}
+			} else {
+				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(members); err != nil {
 			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
 			return
 		}

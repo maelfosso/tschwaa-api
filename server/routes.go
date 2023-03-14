@@ -49,7 +49,11 @@ func (s *Server) setupRoutes() {
 		r.Route("/orgs", func(r chi.Router) {
 			handlers.CreateOrganization(r, s.database)
 			handlers.ListOrganizations(r, s.database)
-			handlers.GetOrganization(r, s.database)
+
+			r.Route("/{orgID}", func(r chi.Router) {
+				handlers.GetOrganization(r, s.database)
+				handlers.GetOrganizationMembers(r, s.database)
+			})
 		})
 	})
 
