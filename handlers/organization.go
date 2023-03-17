@@ -2,15 +2,20 @@ package handlers
 
 import (
 	"context"
+	"crypto/sha512"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"tschwaa.com/api/model"
+	"tschwaa.com/api/requests"
 )
 
 type createOrg interface {
@@ -27,6 +32,14 @@ type getOrg interface {
 
 type getOrgMembers interface {
 	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]model.Member, error)
+}
+
+type inviteMembersIntoOrganization interface {
+	GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error)
+	FindMemberByPhoneNumber(ctx context.Context, phone string) (*model.Member, error)
+	CreateMember(ctx context.Context, member model.Member) (uint64, error)
+	CreateAdhesion(ctx context.Context, memberId, orgId uint64) (uint64, error)
+	CreateInvitation(ctx context.Context, joinId string, adhesionId uint64) (uint64, error)
 }
 
 func CreateOrganization(mux chi.Router, o createOrg) {
@@ -128,6 +141,155 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(members); err != nil {
+			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
+			return
+		}
+	})
+}
+
+type invitationSentResponse struct {
+	PhoneNumber string
+	Invited     bool
+	Error       error
+}
+
+func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganization) {
+	mux.Post("/members/invite", func(w http.ResponseWriter, r *http.Request) {
+		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID: ", orgId)
+
+		decoder := json.NewDecoder(r.Body)
+		var members []model.Member
+		if err := decoder.Decode(&members); err != nil {
+			log.Println("error when decoding the members json data", err)
+			http.Error(w, "error when decoding the members json data", http.StatusBadRequest)
+			return
+		}
+
+		currentUser := getCurrentUser(r)
+
+		org, err := o.GetOrganization(r.Context(), orgId)
+		if err != nil {
+			log.Println("error occured when get information about the organization", err)
+			http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
+			return
+		}
+		wg := new(sync.WaitGroup)
+		wg.Add(len(members))
+
+		responseChannel := make(chan invitationSentResponse) //, 1)
+
+		log.Println("***** START PROCESSING MEMBERS : ", len(members))
+		for _, member := range members {
+			go func(member model.Member, channel chan invitationSentResponse, wg *sync.WaitGroup) {
+				defer wg.Done()
+
+				// Check if a member with the same phone number exist
+				existingMember, err := o.FindMemberByPhoneNumber(r.Context(), member.Phone)
+				if err != nil {
+					log.Println("error when checking if member with phone number already exists", err)
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       err,
+					}
+					return
+				}
+
+				// If member doesn't exist, create it
+				if existingMember == nil {
+					log.Println("error when creating a member", err)
+					memberId, err := o.CreateMember(r.Context(), member)
+					if err != nil {
+						channel <- invitationSentResponse{
+							PhoneNumber: member.Phone,
+							Invited:     false,
+							Error:       err,
+						}
+						return
+					}
+					member.ID = memberId
+				} else {
+					member.ID = existingMember.ID
+					member.Name = existingMember.Name
+					member.Sex = existingMember.Sex
+				}
+
+				sha := sha512.New()
+				sha.Write([]byte(
+					fmt.Sprintf(
+						"%d-%d-%d",
+						member.ID, orgId, time.Now().UnixNano(),
+					),
+				))
+				joinId := base64.URLEncoding.EncodeToString(sha.Sum(nil)[:])
+				result, err := requests.SendInvitationToJoinOrganization(member, org.Name, joinId, currentUser.Firstname)
+				if err != nil {
+					log.Println("error when sending a whatsapp invitation to a member", err)
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       err,
+					}
+					return
+				}
+
+				adhesionId, err := o.CreateAdhesion(r.Context(), member.ID, org.ID)
+				if err != nil {
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       err,
+					}
+					log.Println("error when creating an adhesion to a member", err)
+					return
+				}
+
+				_, err = o.CreateInvitation(r.Context(), joinId, adhesionId)
+				if err != nil {
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       err,
+					}
+					log.Println("error when creating an invitation", err)
+					return
+				}
+
+				if len(result.Messages) >= 1 {
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     true,
+						Error:       nil,
+					}
+					return
+				}
+			}(member, responseChannel, wg)
+		}
+
+		go func() {
+			wg.Wait()
+			close(responseChannel)
+		}()
+
+		log.Println("------ WAIT FOR MEMBERS TO BE ALL PROCESSED \n\n")
+		// wg.Wait()
+		// close(responseChannel)
+		responses := []invitationSentResponse{}
+		for val := range responseChannel {
+			log.Println("Channel : ", val)
+			responses = append(responses, val)
+		}
+		// wg.Wait()
+		// close(responseChannel)
+
+		log.Println("\n\n**** ALL MEMBERS PROCESSED")
+
+		log.Println("invitation send response : ", responses)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(responses); err != nil {
 			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
 			return
 		}

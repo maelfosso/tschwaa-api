@@ -25,10 +25,10 @@ func (o Organization) IsValid() bool {
 }
 
 type Member struct {
-	ID          uint64 `json:"id,omitempty"`
-	Name        string `json:"name,omitempty"`
-	Sex         string `json:"sex,omitempty"`
-	PhoneNumber string `json:"phone_number,omitempty"`
+	ID    uint64 `json:"id,omitempty"`
+	Name  string `json:"name,omitempty"`
+	Sex   string `json:"sex,omitempty"`
+	Phone string `json:"phone_number,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -38,4 +38,10 @@ type Adhesion struct {
 	ID       uint64 `json:"id,omitempty"`
 	MemberID uint64 `json:"member_id,omitempty"`
 	OrgID    uint64 `json:"org_id,omitempty"`
+
+	Joined   bool      `json:"joined,omitempty"`
+	JoinedAt time.Time `json:"joined_at,omitempty"`
+
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }

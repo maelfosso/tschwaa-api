@@ -1,0 +1,4 @@
+ALTER TABLE adhesions
+  ADD COLUMN joined BOOLEAN DEFAULT FALSE,
+  ADD COLUMN joined_at TIMESTAMP
+;

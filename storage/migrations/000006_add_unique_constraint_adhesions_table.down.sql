@@ -1,0 +1,1 @@
+ALTER TABLE adhesions DROP CONSTRAINT ak_adhesions_member_id_organization_id;

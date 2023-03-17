@@ -53,6 +53,7 @@ func (s *Server) setupRoutes() {
 			r.Route("/{orgID}", func(r chi.Router) {
 				handlers.GetOrganization(r, s.database)
 				handlers.GetOrganizationMembers(r, s.database)
+				handlers.InviteMembersIntoOrganization(r, s.database)
 			})
 		})
 	})
