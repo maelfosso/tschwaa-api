@@ -25,10 +25,11 @@ func (o Organization) IsValid() bool {
 }
 
 type Member struct {
-	ID    uint64 `json:"id,omitempty"`
-	Name  string `json:"name,omitempty"`
-	Sex   string `json:"sex,omitempty"`
-	Phone string `json:"phone_number,omitempty"`
+	ID     uint64 `json:"id,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Sex    string `json:"sex,omitempty"`
+	Phone  string `json:"phone_number,omitempty"`
+	Joined bool   `json:"joined,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`

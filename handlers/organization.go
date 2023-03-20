@@ -133,6 +133,7 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 			if err == sql.ErrNoRows {
 				members = []model.Member{}
 			} else {
+				log.Println("error occured when get information about the organization", err)
 				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
 				return
 			}

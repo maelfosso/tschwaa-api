@@ -15,7 +15,7 @@ func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]
 	members := []model.Member{}
 
 	query := `
-		SELECT M.id, M.name, M.sex, M.phone_number
+		SELECT M.id, M.name, M.sex, M.phone, A.joined
 		FROM adhesions A INNER JOIN members M ON A.member_id = M.id
 		WHERE A.organization_id = $1
 	`
@@ -26,16 +26,18 @@ func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]
 
 	for rows.Next() {
 		var id, name, sex, phoneNumber string
-		if err := rows.Scan(&id, &name, &sex, &phoneNumber); err != nil {
+		var joined bool
+		if err := rows.Scan(&id, &name, &sex, &phoneNumber, &joined); err != nil {
 			return nil, fmt.Errorf("error when parsing the organization's members result")
 		}
 
 		i, _ := strconv.ParseUint(id, 10, 64)
 		members = append(members, model.Member{
-			ID:    i,
-			Name:  name,
-			Sex:   sex,
-			Phone: phoneNumber,
+			ID:     i,
+			Name:   name,
+			Sex:    sex,
+			Phone:  phoneNumber,
+			Joined: joined,
 		})
 	}
 
