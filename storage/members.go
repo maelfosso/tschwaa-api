@@ -82,7 +82,7 @@ func (d *Database) FindAdhesionByMemberAndOrg(ctx context.Context, memberId, org
 
 	query := `
 		SELECT id, member_id, organization_id
-		FROM members
+		FROM adhesions
 		WHERE (member_id = $1 AND organization_id = $2)
 	`
 	if err := d.DB.QueryRowContext(ctx, query, memberId, orgId).Scan(&adhesion.ID, &adhesion.MemberID, &adhesion.OrgID); err == nil {
@@ -100,7 +100,7 @@ func (d *Database) FindAdhesionById(ctx context.Context, adhesionId uint64) (*mo
 
 	query := `
 		SELECT id, member_id, organization_id
-		FROM members
+		FROM adhesions
 		WHERE (id = $1)
 	`
 	if err := d.DB.QueryRowContext(ctx, query, adhesionId).Scan(&adhesion.ID, &adhesion.MemberID, &adhesion.OrgID); err == nil {

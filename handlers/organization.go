@@ -149,9 +149,9 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 }
 
 type invitationSentResponse struct {
-	PhoneNumber string
-	Invited     bool
-	Error       error
+	PhoneNumber string `json:"phone_number,omitempty"`
+	Invited     bool   `json:"invited,omitempty"`
+	Error       string `json:"error,omitempty"`
 }
 
 func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganization) {
@@ -164,7 +164,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		var members []model.Member
 		if err := decoder.Decode(&members); err != nil {
 			log.Println("error when decoding the members json data", err)
-			http.Error(w, "error when decoding the members json data", http.StatusBadRequest)
+			http.Error(w, "err-imio-501", http.StatusBadRequest)
 			return
 		}
 
@@ -173,7 +173,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		org, err := o.GetOrganization(r.Context(), orgId)
 		if err != nil {
 			log.Println("error occured when get information about the organization", err)
-			http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
+			http.Error(w, "err-imio-502", http.StatusBadRequest)
 			return
 		}
 		wg := new(sync.WaitGroup)
@@ -193,7 +193,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     false,
-						Error:       err,
+						Error:       "err-imio-510",
 					}
 					return
 				}
@@ -203,10 +203,11 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					log.Println("error when creating a member", err)
 					memberId, err := o.CreateMember(r.Context(), member)
 					if err != nil {
+						log.Println("error when creating a member", err)
 						channel <- invitationSentResponse{
 							PhoneNumber: member.Phone,
 							Invited:     false,
-							Error:       err,
+							Error:       "err-imio-511",
 						}
 						return
 					}
@@ -231,38 +232,39 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     false,
-						Error:       err,
+						Error:       "err-imio-512",
 					}
 					return
 				}
 
 				adhesionId, err := o.CreateAdhesion(r.Context(), member.ID, org.ID)
 				if err != nil {
+					log.Println("error when creating an adhesion to a member", err)
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       err,
+						Invited:     true,
+						Error:       "err-imio-513",
 					}
-					log.Println("error when creating an adhesion to a member", err)
 					return
 				}
 
 				_, err = o.CreateInvitation(r.Context(), joinId, adhesionId)
 				if err != nil {
+					log.Println("error when creating an invitation", err)
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       err,
+						Invited:     true,
+						Error:       "err-imio-514",
 					}
-					log.Println("error when creating an invitation", err)
 					return
 				}
 
 				if len(result.Messages) >= 1 {
+					log.Println("invitation successfully sent to member", member.Phone)
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     true,
-						Error:       nil,
+						Error:       "",
 					}
 					return
 				}
