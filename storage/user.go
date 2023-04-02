@@ -6,11 +6,11 @@ import (
 	"fmt"
 
 	"go.uber.org/zap"
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 )
 
-func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) (*model.User, error) {
-	var user model.User
+func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) (*models.User, error) {
+	var user models.User
 
 	query := `
 		SELECT id, firstname, lastname, phone, email, password
@@ -27,8 +27,8 @@ func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) 
 	}
 }
 
-func (d *Database) FindUserByEmail(ctx context.Context, email string) (*model.User, error) {
-	var user model.User
+func (d *Database) FindUserByEmail(ctx context.Context, email string) (*models.User, error) {
+	var user models.User
 
 	query := `
 		SELECT id, firstname, lastname, phone, email

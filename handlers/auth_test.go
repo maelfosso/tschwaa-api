@@ -13,14 +13,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/matryer/is"
 	"tschwaa.com/api/handlers"
-	"tschwaa.com/api/model"
 )
 
 type signupperMock struct {
-	user model.User
+	user models.User
 }
 
-func (s *signupperMock) Signup(ctx context.Context, user model.User) (string, error) {
+func (s *signupperMock) Signup(ctx context.Context, user models.User) (string, error) {
 	s.user = user
 	return "token", nil
 }
@@ -44,7 +43,7 @@ func TestSignup(t *testing.T) {
 		is.Equal(strings.TrimSpace(resBody), strconv.FormatBool(true))
 
 		decoder := json.NewDecoder(strings.NewReader(jsonBody))
-		var user model.User
+		var user models.User
 		if err := decoder.Decode(&user); err != nil {
 			panic(err)
 		}

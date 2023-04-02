@@ -14,30 +14,30 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 	"tschwaa.com/api/requests"
 )
 
 type createOrg interface {
-	CreateOrganization(ctx context.Context, org model.Organization) (int64, error)
+	CreateOrganization(ctx context.Context, org models.Organization) (int64, error)
 }
 
 type listOrg interface {
-	ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]model.Organization, error)
+	ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]models.Organization, error)
 }
 
 type getOrg interface {
-	GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error)
+	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
 }
 
 type getOrgMembers interface {
-	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]model.Member, error)
+	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.Member, error)
 }
 
 type inviteMembersIntoOrganization interface {
-	GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error)
-	FindMemberByPhoneNumber(ctx context.Context, phone string) (*model.Member, error)
-	CreateMember(ctx context.Context, member model.Member) (uint64, error)
+	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
+	FindMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error)
+	CreateMember(ctx context.Context, member models.Member) (uint64, error)
 	CreateAdhesion(ctx context.Context, memberId, orgId uint64) (uint64, error)
 	CreateInvitation(ctx context.Context, joinId string, adhesionId uint64) (uint64, error)
 }
@@ -46,7 +46,7 @@ func CreateOrganization(mux chi.Router, o createOrg) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var org model.Organization
+		var org models.Organization
 		if err := decoder.Decode(&org); err != nil {
 			http.Error(w, "error when decoding the organization json data", http.StatusBadRequest)
 			return
@@ -131,7 +131,7 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 		members, err := o.GetOrganizationMembers(r.Context(), orgId)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				members = []model.Member{}
+				members = []models.Member{}
 			} else {
 				log.Println("error occured when get information about the organization", err)
 				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
@@ -161,10 +161,10 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		log.Println("Get Org ID: ", orgId)
 
 		decoder := json.NewDecoder(r.Body)
-		var members []model.Member
+		var members []models.Member
 		if err := decoder.Decode(&members); err != nil {
 			log.Println("error when decoding the members json data", err)
-			http.Error(w, "err-imio-501", http.StatusBadRequest)
+			http.Error(w, "ERR_IMIO_501", http.StatusBadRequest)
 			return
 		}
 
@@ -173,7 +173,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		org, err := o.GetOrganization(r.Context(), orgId)
 		if err != nil {
 			log.Println("error occured when get information about the organization", err)
-			http.Error(w, "err-imio-502", http.StatusBadRequest)
+			http.Error(w, "ERR_IMIO_502", http.StatusBadRequest)
 			return
 		}
 		wg := new(sync.WaitGroup)
@@ -183,7 +183,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 
 		log.Println("***** START PROCESSING MEMBERS : ", len(members))
 		for _, member := range members {
-			go func(member model.Member, channel chan invitationSentResponse, wg *sync.WaitGroup) {
+			go func(member models.Member, channel chan invitationSentResponse, wg *sync.WaitGroup) {
 				defer wg.Done()
 
 				// Check if a member with the same phone number exist
@@ -193,7 +193,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     false,
-						Error:       "err-imio-510",
+						Error:       "ERR_IMIO_510",
 					}
 					return
 				}
@@ -207,14 +207,15 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 						channel <- invitationSentResponse{
 							PhoneNumber: member.Phone,
 							Invited:     false,
-							Error:       "err-imio-511",
+							Error:       "ERR_IMIO_511",
 						}
 						return
 					}
 					member.ID = memberId
 				} else {
 					member.ID = existingMember.ID
-					member.Name = existingMember.Name
+					member.FirstName = existingMember.FirstName
+					member.LastName = existingMember.LastName
 					member.Sex = existingMember.Sex
 				}
 
@@ -232,7 +233,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     false,
-						Error:       "err-imio-512",
+						Error:       "ERR_IMIO_512",
 					}
 					return
 				}
@@ -243,7 +244,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     true,
-						Error:       "err-imio-513",
+						Error:       "ERR_IMIO_513",
 					}
 					return
 				}
@@ -254,7 +255,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     true,
-						Error:       "err-imio-514",
+						Error:       "ERR_IMIO_514",
 					}
 					return
 				}
@@ -293,7 +294,8 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(responses); err != nil {
-			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_IMIO_515", http.StatusBadRequest)
 			return
 		}
 	})

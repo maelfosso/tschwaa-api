@@ -7,7 +7,7 @@ import (
 
 	"github.com/fatih/structs"
 	"go.uber.org/zap"
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 	"tschwaa.com/api/services"
 )
 
@@ -20,7 +20,7 @@ func createSecret() (string, error) {
 	return fmt.Sprintf("%x", secret), nil
 }
 
-func (d *Database) Signup(ctx context.Context, user model.User) (string, error) {
+func (d *Database) Signup(ctx context.Context, user models.User) (string, error) {
 	// Hash the password
 	if err := user.HashPassword(); err != nil {
 		return "", err
@@ -47,7 +47,7 @@ func (d *Database) Signup(ctx context.Context, user model.User) (string, error) 
 	return token, err
 }
 
-func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error) {
+func (d *Database) Signin(ctx context.Context, credentials models.SignInCredentials) (*models.SignInResult, error) {
 	existingUser, err := d.FindUserByUsername(ctx, credentials.Username, credentials.Username)
 	if err != nil || existingUser == nil {
 		return nil, fmt.Errorf("user with that username does not exist")
@@ -57,7 +57,7 @@ func (d *Database) Signin(ctx context.Context, credentials model.SignInCredentia
 		return nil, fmt.Errorf("the password is not correct")
 	}
 
-	var signInResult model.SignInResult
+	var signInResult models.SignInResult
 	signInResult.Name = fmt.Sprintf("%s %s", existingUser.Firstname, existingUser.Lastname)
 	signInResult.Email = existingUser.Email
 	// d.log.Info("Sign In Result", zap.Any("sign-i n-r", signInResult))

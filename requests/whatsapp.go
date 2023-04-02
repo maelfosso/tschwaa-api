@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"os"
 
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 )
 
 func getWhatsappRequestURL(url string) string {
@@ -151,15 +151,15 @@ func SendTschwaaOTP(to, language, pinCode string) (*WhatsappSendMessageResponse,
 	return SendMessageTextFromTemplate(to, template, language, parameters)
 }
 
-func getMemberName(member model.Member, language string) string {
-	if len(member.Name) > 0 {
-		return member.Name
+func getMemberName(member models.Member, language string) string {
+	if len(member.FirstName) > 0 || len(member.LastName) > 0 {
+		return fmt.Sprintf("%s %s", member.FirstName, member.LastName)
 	}
 
 	return "Membre"
 }
 
-func SendInvitationToJoinOrganization(member model.Member, organizationName, joinId, organizationReps string) (*WhatsappSendMessageResponse, error) {
+func SendInvitationToJoinOrganization(member models.Member, organizationName, joinId, organizationReps string) (*WhatsappSendMessageResponse, error) {
 	linkToJoin := fmt.Sprintf("https://tschwaa.com/join/%s", joinId)
 
 	language := "fr"

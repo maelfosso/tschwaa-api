@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 )
 
-func (d *Database) CreateOrganization(ctx context.Context, org model.Organization) (int64, error) {
+func (d *Database) CreateOrganization(ctx context.Context, org models.Organization) (int64, error) {
 	query := `
 		INSERT INTO organizations(name, description, created_by)
 		VALUES ($1, $2, $3)
@@ -19,7 +19,7 @@ func (d *Database) CreateOrganization(ctx context.Context, org model.Organizatio
 	return lastInsertId, err
 }
 
-func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]model.Organization, error) {
+func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]models.Organization, error) {
 	query := `
 		SELECT id, name, description
 		FROM organizations
@@ -30,7 +30,7 @@ func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) (
 		return nil, err
 	}
 
-	var orgs = []model.Organization{}
+	var orgs = []models.Organization{}
 	for rows.Next() {
 		var id, name, description string
 		if err := rows.Scan(&id, &name, &description); err != nil {
@@ -38,7 +38,7 @@ func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) (
 		}
 
 		i, _ := strconv.ParseUint(id, 10, 64)
-		orgs = append(orgs, model.Organization{
+		orgs = append(orgs, models.Organization{
 			ID:          i,
 			Name:        name,
 			Description: description,
@@ -50,8 +50,8 @@ func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) (
 	return orgs, nil
 }
 
-func (d *Database) GetOrganization(ctx context.Context, orgId uint64) (*model.Organization, error) {
-	var org model.Organization
+func (d *Database) GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error) {
+	var org models.Organization
 
 	query := `
 		SELECT id, name, description, created_at

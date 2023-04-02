@@ -1,6 +1,6 @@
 CREATE TABLE invitations (
   id INTEGER GENERATED ALWAYS AS IDENTITY,
-  link INTEGER,
+  link TEXT NOT NULL,
   active BOOLEAN DEFAULT TRUE,
   adhesion_id INTEGER,
 

@@ -1,4 +1,4 @@
-package model_test
+package models_test
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/matryer/is"
-	"tschwaa.com/api/model"
 )
 
 func TestUser_IsValid(t *testing.T) {
@@ -30,7 +29,7 @@ func TestUser_IsValid(t *testing.T) {
 		for i, test := range tests {
 			t.Run(fmt.Sprint(i), func(t *testing.T) {
 				is := is.New(t)
-				u := model.User{0, test.firstname, test.lastname, test.phone, test.email, test.password, "", time.Now(), time.Now()}
+				u := models.User{0, test.firstname, test.lastname, test.phone, test.email, test.password, "", time.Now(), time.Now()}
 				is.Equal(test.valid, u.IsValid())
 			})
 		}

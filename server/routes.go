@@ -66,5 +66,8 @@ func (s *Server) setupRoutes() {
 			handlers.Signup(r, s.database, s.log)
 			handlers.Signin(r, s.database)
 		})
+
+		handlers.GetInvitation(s.mux, s.database)
+		handlers.JoinOrganization(s.mux)
 	})
 }

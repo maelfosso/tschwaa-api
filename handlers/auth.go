@@ -9,25 +9,25 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"go.uber.org/zap"
-	"tschwaa.com/api/model"
+	"tschwaa.com/api/models"
 )
 
 type auth interface {
-	Signup(ctx context.Context, user model.User) (string, error)
-	Signin(ctx context.Context, credentials model.SignInCredentials) (*model.SignInResult, error)
+	Signup(ctx context.Context, user models.User) (string, error)
+	Signin(ctx context.Context, credentials models.SignInCredentials) (*models.SignInResult, error)
 }
 
 func Signup(mux chi.Router, s auth, log *zap.Logger) {
 	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var data model.SignUpCredentials
+		var data models.SignUpCredentials
 		if err := decoder.Decode(&data); err != nil {
 			http.Error(w, "error decoding the user model", http.StatusBadRequest)
 			return
 		}
 
-		var user model.User
+		var user models.User
 		user.Firstname = data.Firstname
 		user.Lastname = data.Lastname
 		user.Password = data.Password
@@ -62,7 +62,7 @@ func Signin(mux chi.Router, s auth) {
 
 		decoder := json.NewDecoder(r.Body)
 
-		var credenials model.SignInCredentials
+		var credenials models.SignInCredentials
 		if err := decoder.Decode(&credenials); err != nil {
 			http.Error(w, "error decoding credentials", http.StatusBadRequest)
 			return
