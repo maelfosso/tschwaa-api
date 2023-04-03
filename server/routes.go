@@ -68,6 +68,6 @@ func (s *Server) setupRoutes() {
 		})
 
 		handlers.GetInvitation(s.mux, s.database)
-		handlers.JoinOrganization(s.mux)
+		handlers.JoinOrganization(s.mux, s.database)
 	})
 }

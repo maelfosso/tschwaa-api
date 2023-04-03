@@ -172,9 +172,9 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 	var invitation models.Invitation
 
 	query := `
-		SELECT link, active, created_at,
+		SELECT link, active, i.created_at,
 			a.joined, a.member_id, a.organization_id,
-			m.id, m.fist_name, m.last_name, m.sex, m.phone,
+			m.id, m.first_name, m.last_name, m.sex, m.phone,
 			o.name, o.description
 		FROM invitations i
 		INNER JOIN adhesions a ON i.adhesion_id = a.id
@@ -192,4 +192,40 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 	} else {
 		return nil, err
 	}
+}
+
+func (d *Database) UpdateMember(ctx context.Context, member models.Member) error {
+	return nil
+}
+
+func (d *Database) DisableInvitation(ctx context.Context, link string) (uint64, error) {
+	var adhesionId uint64
+
+	query := `
+		UPDATE invitations
+		SET active = FALSE
+		WHERE link = $1
+		RETURNING adhesion_id
+	`
+	err := d.DB.QueryRowContext(ctx, query, link).Scan(&adhesionId)
+	if err != nil && err != sql.ErrNoRows {
+		return 0, err
+	}
+
+	return adhesionId, nil
+}
+
+func (d *Database) ApprovedAdhesion(ctx context.Context, adhesionID uint64) error {
+	var mid sql.NullInt64
+	query := `
+		UPDATE adhesions
+		SET joined = TRUE, joined_at = NOW()
+		WHERE id = $1
+	`
+	err := d.DB.QueryRowContext(ctx, query, adhesionID).Scan(&mid)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
+
+	return nil
 }
