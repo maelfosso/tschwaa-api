@@ -8,18 +8,19 @@ import (
 	"tschwaa.com/api/models"
 )
 
-func (d *Database) CreateOrganization(ctx context.Context, org models.Organization) (int64, error) {
+func (d *Database) CreateOrganization(ctx context.Context, org models.Organization) (uint64, error) {
 	query := `
 		INSERT INTO organizations(name, description, created_by)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
-	var lastInsertId int64 = 0
+
+	var lastInsertId uint64 = 0
 	err := d.DB.QueryRowContext(ctx, query, org.Name, org.Description, org.CreatedBy).Scan(&lastInsertId)
 	return lastInsertId, err
 }
 
-func (d *Database) ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]models.Organization, error) {
+func (d *Database) ListAllOrganizationFromMember(ctx context.Context, id uint64) ([]models.Organization, error) {
 	query := `
 		SELECT id, name, description
 		FROM organizations

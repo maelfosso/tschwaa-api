@@ -6,16 +6,17 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"time"
 
 	"go.uber.org/zap"
 	"tschwaa.com/api/models"
 )
 
-func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.Member, error) {
-	members := []models.Member{}
+func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.OrganizationMember, error) {
+	members := []models.OrganizationMember{}
 
 	query := `
-		SELECT M.id, M.first_name, M.last_name, M.sex, M.phone, A.joined
+		SELECT M.id, M.first_name, M.last_name, M.sex, M.phone, A.joined, A.joined_at, A.position, A.role, A.status
 		FROM adhesions A INNER JOIN members M ON A.member_id = M.id
 		WHERE A.organization_id = $1
 	`
@@ -25,20 +26,27 @@ func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]
 	}
 
 	for rows.Next() {
-		var id, firstName, lastName, sex, phoneNumber string
+		var id, firstName, lastName, sex, phoneNumber, position, role, status string
 		var joined bool
-		if err := rows.Scan(&id, &firstName, &lastName, &sex, &phoneNumber, &joined); err != nil {
-			return nil, fmt.Errorf("error when parsing the organization's members result")
+		var joinedAt sql.NullTime
+		if err := rows.Scan(&id, &firstName, &lastName, &sex, &phoneNumber, &joined, &joinedAt, &position, &role, &status); err != nil {
+			return nil, fmt.Errorf("error when parsing the organization's members result", err)
 		}
 
 		i, _ := strconv.ParseUint(id, 10, 64)
-		members = append(members, models.Member{
+		members = append(members, models.OrganizationMember{
 			ID:        i,
 			FirstName: firstName,
 			LastName:  lastName,
 			Sex:       sex,
 			Phone:     phoneNumber,
-			Joined:    joined,
+
+			Joined:  joined,
+			JointAt: joinedAt.Time,
+
+			Position: position,
+			Role:     role,
+			Status:   status,
 		})
 	}
 
@@ -47,36 +55,6 @@ func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]
 	}
 
 	return members, nil
-}
-
-func (d *Database) FindMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error) {
-	var member models.Member
-
-	query := `
-		SELECT id, first_name, last_name, sex, phone
-		FROM members
-		WHERE (phone = $1)
-	`
-	if err := d.DB.QueryRowContext(ctx, query, phone).Scan(&member.ID, &member.FirstName, &member.LastName, &member.Sex, &member.Phone); err == nil {
-		return &member, nil
-	} else if err == sql.ErrNoRows {
-		return nil, nil
-	} else {
-		d.log.Info("Error FindUserByUsername ", zap.Error(err))
-		return nil, err
-	}
-}
-
-func (d *Database) CreateMember(ctx context.Context, member models.Member) (uint64, error) {
-	log.Println("create member", member.FirstName, member.LastName)
-	query := `
-		INSERT INTO members(first_name, last_name, sex, phone)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id
-	`
-	var lastInsertId uint64 = 0
-	err := d.DB.QueryRowContext(ctx, query, member.FirstName, member.LastName, member.Sex, member.Phone).Scan(&lastInsertId)
-	return lastInsertId, err
 }
 
 func (d *Database) FindAdhesionByMemberAndOrg(ctx context.Context, memberId, orgId uint64) (*models.Adhesion, error) {
@@ -110,12 +88,12 @@ func (d *Database) FindAdhesionById(ctx context.Context, adhesionId uint64) (*mo
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindUserByUsername ", zap.Error(err))
+		d.log.Info("Error FindMemberByUsername ", zap.Error(err))
 		return nil, err
 	}
 }
 
-func (d *Database) CreateAdhesion(ctx context.Context, memberId, orgId uint64) (uint64, error) {
+func (d *Database) CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error) {
 	adhesion, err := d.FindAdhesionByMemberAndOrg(ctx, memberId, orgId)
 	if err != nil {
 		return 0, err
@@ -125,14 +103,24 @@ func (d *Database) CreateAdhesion(ctx context.Context, memberId, orgId uint64) (
 		return adhesion.ID, nil
 	}
 
-	query := `
-		INSERT INTO adhesions(member_id, organization_id)
-		VALUES ($1, $2)
-		RETURNING id
-	`
 	log.Println("CreateAdhesion", memberId, orgId)
+	var query string
 	var lastInsertId uint64 = 0
-	err = d.DB.QueryRowContext(ctx, query, memberId, orgId).Scan(&lastInsertId)
+	if joined {
+		query = `
+			INSERT INTO adhesions(member_id, organization_id, joined, joined_at)
+			VALUES ($1, $2, $3, $4)
+			RETURNING id
+		`
+		err = d.DB.QueryRowContext(ctx, query, memberId, orgId, joined, time.Now()).Scan(&lastInsertId)
+	} else {
+		query = `
+			INSERT INTO adhesions(member_id, organization_id)
+			VALUES ($1, $2)
+			RETURNING id
+		`
+		err = d.DB.QueryRowContext(ctx, query, memberId, orgId).Scan(&lastInsertId)
+	}
 
 	return lastInsertId, err
 }
@@ -174,7 +162,7 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 	query := `
 		SELECT link, active, i.created_at,
 			a.joined, a.member_id, a.organization_id,
-			m.id, m.first_name, m.last_name, m.sex, m.phone,
+			m.id, m.first_name, m.last_name, m.sex, m.phone, m.email, m.user_id,
 			o.name, o.description
 		FROM invitations i
 		INNER JOIN adhesions a ON i.adhesion_id = a.id
@@ -185,17 +173,13 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 	if err := d.DB.QueryRowContext(ctx, query, link).Scan(
 		&invitation.Link, &invitation.Active, &invitation.CreatedAt,
 		&invitation.Adhesion.Joined, &invitation.Adhesion.MemberID, &invitation.Adhesion.OrgID,
-		&invitation.Member.ID, &invitation.Member.FirstName, &invitation.Member.LastName, &invitation.Member.Sex, &invitation.Member.Phone,
+		&invitation.Member.ID, &invitation.Member.FirstName, &invitation.Member.LastName, &invitation.Member.Sex, &invitation.Member.Phone, &invitation.Member.Email, &invitation.Member.UserID,
 		&invitation.Organization.Name, &invitation.Organization.Description,
 	); err == nil {
 		return &invitation, nil
 	} else {
 		return nil, err
 	}
-}
-
-func (d *Database) UpdateMember(ctx context.Context, member models.Member) error {
-	return nil
 }
 
 func (d *Database) DisableInvitation(ctx context.Context, link string) (uint64, error) {

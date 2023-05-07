@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"time"
 
@@ -30,24 +31,32 @@ func (s *Server) requestLoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) convertJwtTokenToUser(next http.Handler) http.Handler {
+func (s *Server) convertJwtTokenToMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
-		data := ctx.Value(services.JwtClaimsKey).(map[string]interface{})
+
+		claims := ctx.Value(services.JwtClaimsKey)
+		log.Println("convert jwt token to member : ", claims)
+		if claims == nil {
+			ctx = context.WithValue(ctx, services.JwtMemberKey, nil)
+			next.ServeHTTP(w, req.WithContext(ctx))
+			return
+		}
+		data := claims.(map[string]interface{})
 		email := data["Email"].(string)
 
-		user, err := s.database.FindUserByEmail(ctx, email)
+		user, err := s.database.FindMemberByEmail(ctx, email)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		s.log.Info(
-			"Current User",
+			"Current Member",
 			zap.Any("Jwt user", user),
 		)
 
-		ctx = context.WithValue(ctx, services.JwtUserKey, user)
+		ctx = context.WithValue(ctx, services.JwtMemberKey, user)
 		next.ServeHTTP(w, req.WithContext(ctx))
 	})
 }

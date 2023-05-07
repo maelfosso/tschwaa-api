@@ -8,7 +8,11 @@ CREATE TABLE adhesions (
 
   PRIMARY KEY (id),
   CONSTRAINT fk_adhesions_members_member_id
-    FOREIGN KEY (member_id) REFERENCES members(id),
+    FOREIGN KEY (member_id) REFERENCES members(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT fk_adhesions_organizations_organization_id
     FOREIGN KEY (organization_id) REFERENCES organizations(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );

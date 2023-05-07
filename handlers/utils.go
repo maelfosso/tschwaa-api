@@ -7,9 +7,13 @@ import (
 	"tschwaa.com/api/services"
 )
 
-func getCurrentUser(req *http.Request) *models.User {
-	user := req.Context().Value(services.JwtUserKey)
-	if u, ok := user.(*models.User); ok {
+func GetCurrentMember(req *http.Request) *models.Member {
+	user := req.Context().Value(services.JwtMemberKey)
+	if user == nil {
+		return nil
+	}
+
+	if u, ok := user.(*models.Member); ok {
 		return u
 	}
 

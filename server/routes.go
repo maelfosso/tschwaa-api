@@ -30,6 +30,7 @@ func (srw *statusResponseWriter) WriteHeader(statusCode int) {
 
 func (s *Server) setupRoutes() {
 	s.mux.Use(s.requestLoggerMiddleware)
+
 	s.mux.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"}, // http://localhost:3000", "http://www.tschwaa.local"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
@@ -39,11 +40,12 @@ func (s *Server) setupRoutes() {
 		MaxAge:           300,
 	}))
 
-	s.mux.Group(func(r chi.Router) {
-		r.Use(services.Verifier)
-		r.Use(services.Authenticator)
+	s.mux.Use(services.Verifier)
+	s.mux.Use(services.ParseJWTToken)
 
-		r.Use(s.convertJwtTokenToUser)
+	s.mux.Group(func(r chi.Router) {
+		r.Use(services.Authenticator)
+		r.Use(s.convertJwtTokenToMember)
 
 		// Organization
 		r.Route("/orgs", func(r chi.Router) {
@@ -59,15 +61,19 @@ func (s *Server) setupRoutes() {
 	})
 
 	s.mux.Group(func(r chi.Router) {
+		r.Use(s.convertJwtTokenToMember)
+
 		handlers.Health(s.mux)
 
 		r.Route("/auth/", func(r chi.Router) {
-			// Auth
-			handlers.Signup(r, s.database, s.log)
+			handlers.Signup(r, s.database)
 			handlers.Signin(r, s.database)
 		})
 
-		handlers.GetInvitation(s.mux, s.database)
-		handlers.JoinOrganization(s.mux, s.database)
+		r.Route("/join/", func(r chi.Router) {
+			handlers.GetInvitation(r, s.database)
+			handlers.JoinOrganization(r, s.database)
+		})
+
 	})
 }

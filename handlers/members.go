@@ -18,108 +18,16 @@ import (
 	"tschwaa.com/api/requests"
 )
 
-type createOrg interface {
-	CreateOrganization(ctx context.Context, org models.Organization) (int64, error)
-}
-
-type listOrg interface {
-	ListAllOrganizationFromUser(ctx context.Context, id uint64) ([]models.Organization, error)
-}
-
-type getOrg interface {
-	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
-}
-
 type getOrgMembers interface {
-	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.Member, error)
+	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.OrganizationMember, error)
 }
 
 type inviteMembersIntoOrganization interface {
 	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
 	FindMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error)
 	CreateMember(ctx context.Context, member models.Member) (uint64, error)
-	CreateAdhesion(ctx context.Context, memberId, orgId uint64) (uint64, error)
+	CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error)
 	CreateInvitation(ctx context.Context, joinId string, adhesionId uint64) (uint64, error)
-}
-
-func CreateOrganization(mux chi.Router, o createOrg) {
-	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
-		decoder := json.NewDecoder(r.Body)
-
-		var org models.Organization
-		if err := decoder.Decode(&org); err != nil {
-			http.Error(w, "error when decoding the organization json data", http.StatusBadRequest)
-			return
-		}
-
-		currentUser := getCurrentUser(r)
-		org.CreatedBy = currentUser.ID
-
-		if !org.IsValid() {
-			http.Error(w, "error - organization is not valid", http.StatusBadRequest)
-			return
-		}
-
-		orgId, err := o.CreateOrganization(r.Context(), org)
-		if err != nil {
-			http.Error(w, "error when creating the organization", http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		if err = json.NewEncoder(w).Encode(orgId); err != nil {
-			http.Error(w, "error when encoding the request response", http.StatusBadRequest)
-			return
-		}
-	})
-}
-
-func ListOrganizations(mux chi.Router, o listOrg) {
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-
-		fmt.Println("JWT Claims - ", getCurrentUser(r))
-		currentUser := getCurrentUser(r)
-		orgs, err := o.ListAllOrganizationFromUser(r.Context(), uint64(currentUser.ID))
-		if err != nil {
-			http.Error(w, "error occured when fetching the organizations", http.StatusBadRequest)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(orgs); err != nil {
-			http.Error(w, "error when encoding all the organizations", http.StatusBadRequest)
-			return
-		}
-	})
-}
-
-func GetOrganization(mux chi.Router, o getOrg) {
-	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID: ", orgId)
-
-		org, err := o.GetOrganization(r.Context(), orgId)
-		log.Println("Get Organization ", org, err)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				http.Error(w, "that organization does not exist", http.StatusBadRequest)
-				return
-			} else {
-				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
-				return
-			}
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(org); err != nil {
-			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
-			return
-		}
-	})
 }
 
 func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
@@ -131,13 +39,14 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 		members, err := o.GetOrganizationMembers(r.Context(), orgId)
 		if err != nil {
 			if err == sql.ErrNoRows {
-				members = []models.Member{}
+				members = []models.OrganizationMember{}
 			} else {
 				log.Println("error occured when get information about the organization", err)
 				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
 				return
 			}
 		}
+		log.Println("GEt Organization Members ", members)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -168,7 +77,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 			return
 		}
 
-		currentUser := getCurrentUser(r)
+		log.Println("member invited", r.Body)
+		log.Println(members)
+		currentMember := GetCurrentMember(r)
 
 		org, err := o.GetOrganization(r.Context(), orgId)
 		if err != nil {
@@ -186,6 +97,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 			go func(member models.Member, channel chan invitationSentResponse, wg *sync.WaitGroup) {
 				defer wg.Done()
 
+				log.Println("Start Processing - ", member)
 				// Check if a member with the same phone number exist
 				existingMember, err := o.FindMemberByPhoneNumber(r.Context(), member.Phone)
 				if err != nil {
@@ -219,6 +131,8 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					member.Sex = existingMember.Sex
 				}
 
+				log.Println("PRocessing Members - ", member)
+
 				sha := sha512.New()
 				sha.Write([]byte(
 					fmt.Sprintf(
@@ -227,7 +141,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					),
 				))
 				joinId := base64.URLEncoding.EncodeToString(sha.Sum(nil)[:])
-				result, err := requests.SendInvitationToJoinOrganization(member, org.Name, joinId, currentUser.Firstname)
+				result, err := requests.SendInvitationToJoinOrganization(member, org.Name, joinId, currentMember.FirstName)
 				if err != nil {
 					log.Println("error when sending a whatsapp invitation to a member", err)
 					channel <- invitationSentResponse{
@@ -238,7 +152,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					return
 				}
 
-				adhesionId, err := o.CreateAdhesion(r.Context(), member.ID, org.ID)
+				adhesionId, err := o.CreateAdhesion(r.Context(), member.ID, org.ID, false)
 				if err != nil {
 					log.Println("error when creating an adhesion to a member", err)
 					channel <- invitationSentResponse{
@@ -272,12 +186,13 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 			}(member, responseChannel, wg)
 		}
 
+		log.Println("------ WAIT FOR MEMBERS TO BE ALL PROCESSED \n\n")
 		go func() {
 			wg.Wait()
+			log.Println("------ CLOSING RESPONSE CHANNEL.. -----")
 			close(responseChannel)
 		}()
 
-		log.Println("------ WAIT FOR MEMBERS TO BE ALL PROCESSED \n\n")
 		// wg.Wait()
 		// close(responseChannel)
 		responses := []invitationSentResponse{}
@@ -288,9 +203,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		// wg.Wait()
 		// close(responseChannel)
 
-		log.Println("\n\n**** ALL MEMBERS PROCESSED")
+		// log.Println("\n\n**** ALL MEMBERS PROCESSED")
 
-		log.Println("invitation send response : ", responses)
+		// log.Println("invitation send response : ", responses)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(responses); err != nil {
@@ -300,26 +215,3 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 		}
 	})
 }
-
-// func ArticleCtx(next http.Handler) http.Handler {
-//   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//     articleID := chi.URLParam(r, "articleID")
-//     article, err := dbGetArticle(articleID)
-//     if err != nil {
-//       http.Error(w, http.StatusText(404), 404)
-//       return
-//     }
-//     ctx := context.WithValue(r.Context(), "article", article)
-//     next.ServeHTTP(w, r.WithContext(ctx))
-//   })
-// }
-
-// func getArticle(w http.ResponseWriter, r *http.Request) {
-//   ctx := r.Context()
-//   article, ok := ctx.Value("article").(*Article)
-//   if !ok {
-//     http.Error(w, http.StatusText(422), 422)
-//     return
-//   }
-//   w.Write([]byte(fmt.Sprintf("title:%s", article.Title)))
-// }

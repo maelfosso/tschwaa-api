@@ -1,7 +1,5 @@
-CREATE TABLE IF NOT EXISTS users(
+CREATE TABLE users (
   id Integer Primary Key Generated Always as Identity,
-  firstname TEXT NOT NULL,
-  lastname TEXT NOT NULL,
   phone VARCHAR(15) UNIQUE NOT NULL,
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
@@ -9,3 +7,7 @@ CREATE TABLE IF NOT EXISTS users(
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+-- INSERT INTO users
+-- SELECT phone, email, password, token, created_at, updated_at
+-- FROM members;

@@ -160,6 +160,7 @@ func getMemberName(member models.Member, language string) string {
 }
 
 func SendInvitationToJoinOrganization(member models.Member, organizationName, joinId, organizationReps string) (*WhatsappSendMessageResponse, error) {
+	log.Println("SendInvitationToJoinOrganization ", member)
 	linkToJoin := fmt.Sprintf("https://tschwaa.com/join/%s", joinId)
 
 	language := "fr"

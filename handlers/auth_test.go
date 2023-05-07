@@ -13,20 +13,26 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/matryer/is"
 	"tschwaa.com/api/handlers"
+	"tschwaa.com/api/models"
 )
 
-type signupperMock struct {
-	user models.User
+type authMock struct {
+	user models.Member
 }
 
-func (s *signupperMock) Signup(ctx context.Context, user models.User) (string, error) {
+func (s *authMock) Signup(ctx context.Context, user models.Member) (string, error) {
 	s.user = user
 	return "token", nil
 }
 
+func (s *authMock) Signin(ctx context.Context, credentials models.SignInInputs) (*models.SignInResult, error) {
+	// s.user = user
+	return nil, nil
+}
+
 func TestSignup(t *testing.T) {
 	mux := chi.NewMux()
-	s := &signupperMock{}
+	s := &authMock{}
 	handlers.Signup(mux, s)
 
 	t.Run("signs up", func(t *testing.T) {
@@ -43,7 +49,7 @@ func TestSignup(t *testing.T) {
 		is.Equal(strings.TrimSpace(resBody), strconv.FormatBool(true))
 
 		decoder := json.NewDecoder(strings.NewReader(jsonBody))
-		var user models.User
+		var user models.Member
 		if err := decoder.Decode(&user); err != nil {
 			panic(err)
 		}

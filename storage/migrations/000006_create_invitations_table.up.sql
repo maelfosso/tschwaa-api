@@ -10,4 +10,6 @@ CREATE TABLE invitations (
   PRIMARY KEY (id),
   CONSTRAINT fk_invitations_adhesions_adhesion_id
     FOREIGN KEY (adhesion_id) REFERENCES adhesions(id)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE
 );

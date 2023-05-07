@@ -10,7 +10,7 @@ type Organization struct {
 	ID          uint64 `json:"id,omitempty"`
 	Name        string `json:"name,omitempty" validate:"nonzero,nonnil"`
 	Description string `json:"description,omitempty"`
-	CreatedBy   int    `json:"createdBy,omitempty" validate:"min=1"`
+	CreatedBy   uint64 `json:"createdBy,omitempty" validate:"min=1"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
@@ -24,16 +24,19 @@ func (o Organization) IsValid() bool {
 	return true
 }
 
-type Member struct {
+type OrganizationMember struct {
 	ID        uint64 `json:"id,omitempty"`
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	Sex       string `json:"sex,omitempty"`
-	Phone     string `json:"phone_number,omitempty"`
-	Joined    bool   `json:"joined,omitempty"`
+	Phone     string `json:"phone,omitempty"`
 
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	Position string `json:"position,omitempty"`
+	Role     string `json:"role,omitempty"`
+	Status   string `json:"status,omitempty"`
+
+	Joined  bool      `json:"joined,omitempty"`
+	JointAt time.Time `json:"joined_at,omitempty"`
 }
 
 type Adhesion struct {
@@ -43,6 +46,10 @@ type Adhesion struct {
 
 	Joined   bool      `json:"joined,omitempty"`
 	JoinedAt time.Time `json:"joined_at,omitempty"`
+
+	Position string `json:"position,omitempty"`
+	Role     string `json:"role,omitempty"`
+	Status   string `json:"status,omitempty"`
 
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
