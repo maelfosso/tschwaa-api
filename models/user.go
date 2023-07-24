@@ -130,7 +130,7 @@ type SignInInputs struct {
 }
 
 type SignInResult struct {
-	ID    uint64 `json:"name,omitempty"`
+	ID    uint64 `json:"id,omitempty"`
 	Name  string `json:"name",omitempty`
 	Email string `json:"email",omitempty`
 	Token string `json:"access_token",omitempty`
@@ -153,8 +153,11 @@ type JoinOrganizationInputs struct {
 }
 
 type JoinOrganizationResults struct {
-	Organization Organization `json:"organization,omitempty"`
-	Member       Member       `json:"member,omitempty"`
-	Link         string       `json:"link,omitempty"`
 	Code         string       `json:"code,omitempty"`
+	Active       bool         `json:"active,omitempty"`
+	Link         string       `json:"link,omitempty"`
+	CreatedAt    time.Time    `json:"created_at,omitempty"`
+	Adhesion     *Adhesion    `json:"adhesion,omitempty"`
+	Member       Member       `json:"member,omitempty"`
+	Organization Organization `json:"organization,omitempty"`
 }

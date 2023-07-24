@@ -38,11 +38,11 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 		if err != nil {
 			if err == sql.ErrNoRows {
 				log.Println("that invitation does not exist; ", err)
-				http.Error(w, "ERR_JOIN_601", http.StatusBadRequest)
+				http.Error(w, "ERR_GINV_601", http.StatusBadRequest)
 				return
 			} else {
 				log.Println("error occured when get information about the organization; ", err)
-				http.Error(w, "ERR_JOIN_602", http.StatusBadRequest)
+				http.Error(w, "ERR_GINV_602", http.StatusBadRequest)
 				return
 			}
 		}
@@ -55,7 +55,7 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 			if !(invitation.Member.Phone == currentUser.Phone ||
 				invitation.Member.Email == currentUser.Email) {
 				log.Println("the invited member is not the signed member")
-				http.Error(w, "ERR_JOIN_606", http.StatusBadRequest)
+				http.Error(w, "ERR_GINV_606", http.StatusBadRequest)
 				return
 			}
 		}
@@ -63,47 +63,59 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 		// Check if the invitation is active
 		if !invitation.Active {
 			log.Println("the invitation is no longer active")
-			http.Error(w, "ERR_JOIN_603", http.StatusBadRequest)
+			http.Error(w, "ERR_GINV_603", http.StatusBadRequest)
 			return
 		}
 
 		// Check if the invitation is outdated
 		if invitation.CreatedAt.After(time.Now().AddDate(0, 0, INVITATIION_TIME_OUT_AFTER_DAYS)) {
 			log.Println("the invitation is outdated")
-			http.Error(w, "ERR_JOIN_604", http.StatusBadRequest)
+			http.Error(w, "ERR_GINV_604", http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 
+		var result models.JoinOrganizationResults
+		result.Link = invitation.Link
+		result.Member = invitation.Member
+		result.Organization = invitation.Organization
 		if invitation.Member.UserID > 0 {
-			var result models.JoinOrganizationResults
-			result.Link = invitation.Link
-			result.Member = invitation.Member
-			result.Organization = invitation.Organization
+			result.Adhesion = nil
 
 			if currentUser != nil {
 				// Return member info: S601
 				result.Code = "S601"
-				if err := json.NewEncoder(w).Encode(result); err != nil {
-					log.Println("error when encoding all the organization; ", err)
-					http.Error(w, "ERR_IMIO_606", http.StatusBadRequest)
-					return
-				}
+				// if err := json.NewEncoder(w).Encode(result); err != nil {
+				// 	log.Println("error when encoding the successful response; ", err)
+				// 	http.Error(w, "ERR_GINV_607", http.StatusBadRequest)
+				// 	return
+				// }
 			} else {
 				// Return member info: S602
 				result.Code = "S602"
-				if err := json.NewEncoder(w).Encode(result); err != nil {
-					log.Println("error when encoding all the organization; ", err)
-					http.Error(w, "ERR_IMIO_607", http.StatusBadRequest)
-					return
-				}
+				// if err := json.NewEncoder(w).Encode(result); err != nil {
+				// 	log.Println("error when encoding the successfult response; ", err)
+				// 	http.Error(w, "ERR_GINV_608", http.StatusBadRequest)
+				// 	return
+				// }
+			}
+			data, _ := json.Marshal(result)
+			log.Printf("Result - Current User: %s\n", data)
+			if err := json.NewEncoder(w).Encode(result); err != nil {
+				log.Println("error when encoding the successful response; ", err)
+				http.Error(w, "ERR_GINV_607", http.StatusBadRequest)
+				return
 			}
 		} else {
-			if err := json.NewEncoder(w).Encode(invitation); err != nil {
-				log.Println("error when encoding all the organization; ", err)
-				http.Error(w, "ERR_IMIO_605", http.StatusBadRequest)
+			// result.Adhesion = &invitation.Adhesion
+			result.CreatedAt = invitation.CreatedAt
+			result.Active = invitation.Active
+			result.Code = ""
+			if err := json.NewEncoder(w).Encode(result); err != nil {
+				log.Println("error when encoding the successful response; ", err)
+				http.Error(w, "ERR_GINV_605", http.StatusBadRequest)
 				return
 			}
 		}

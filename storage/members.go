@@ -163,7 +163,7 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 		SELECT link, active, i.created_at,
 			a.joined, a.member_id, a.organization_id,
 			m.id, m.first_name, m.last_name, m.sex, m.phone, m.email, m.user_id,
-			o.name, o.description
+			o.id, o.name, o.description
 		FROM invitations i
 		INNER JOIN adhesions a ON i.adhesion_id = a.id
 		INNER JOIN members m ON a.member_id = m.id
@@ -174,7 +174,7 @@ func (d *Database) GetInvitation(ctx context.Context, link string) (*models.Invi
 		&invitation.Link, &invitation.Active, &invitation.CreatedAt,
 		&invitation.Adhesion.Joined, &invitation.Adhesion.MemberID, &invitation.Adhesion.OrgID,
 		&invitation.Member.ID, &invitation.Member.FirstName, &invitation.Member.LastName, &invitation.Member.Sex, &invitation.Member.Phone, &invitation.Member.Email, &invitation.Member.UserID,
-		&invitation.Organization.Name, &invitation.Organization.Description,
+		&invitation.Organization.ID, &invitation.Organization.Name, &invitation.Organization.Description,
 	); err == nil {
 		return &invitation, nil
 	} else {
