@@ -73,6 +73,11 @@ func (s *Server) setupRoutes() {
 			handlers.ResendOTP(r, s.database)
 		})
 
+		r.Route("/token", func(r chi.Router) {
+			handlers.Refresh(r)
+			handlers.IsTokenValid(r)
+		})
+
 		r.Route("/join/", func(r chi.Router) {
 			handlers.GetInvitation(r, s.database)
 			handlers.JoinOrganization(r, s.database)
