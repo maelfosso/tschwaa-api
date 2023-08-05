@@ -68,6 +68,9 @@ func (s *Server) setupRoutes() {
 		r.Route("/auth/", func(r chi.Router) {
 			handlers.Signup(r, s.database)
 			handlers.Signin(r, s.database)
+			handlers.GetOTP(r, s.database)
+			handlers.CheckOTP(r, s.database)
+			handlers.ResendOTP(r, s.database)
 		})
 
 		r.Route("/join/", func(r chi.Router) {
