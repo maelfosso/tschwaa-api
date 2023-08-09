@@ -4,137 +4,188 @@ import (
 	"context"
 	"database/sql"
 
-	"go.uber.org/zap"
 	"tschwaa.com/api/models"
 )
 
-func (d *Database) FindUserByUsername(ctx context.Context, phone, email string) (*models.User, error) {
+const getUserByUsername = `
+SELECT id, phone, email, password, member_id
+FROM users
+WHERE (phone = $1) OR (email = $2)
+`
+
+type GetUserByUsernameParams struct {
+	Phone string
+	Email string
+}
+
+func (q *Queries) GetUserByUsername(ctx context.Context, arg GetUserByUsernameParams) (*models.User, error) {
 	var user models.User
 
-	query := `
-		SELECT id, phone, email, password, member_id
-		FROM users
-		WHERE (phone = $1) OR (email = $2)
-	`
-	if err := d.DB.QueryRowContext(ctx, query, phone, email).Scan(&user.ID, &user.Phone, &user.Email, &user.Password, &user.MemberID); err == nil {
+	if err := q.db.QueryRowContext(ctx, getUserByUsername, arg.Phone, arg.Email).Scan(&user.ID, &user.Phone, &user.Email, &user.Password, &user.MemberID); err == nil {
 		return &user, nil
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindMemberByUsername ", zap.Error(err))
 		return nil, err
 	}
 }
 
-func (d *Database) CreateUser(ctx context.Context, user models.User) (uint64, error) {
-	tx, err := d.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
-	if err != nil {
-		return 0, err
-	}
-
-	query := `
-		INSERT INTO users(email, phone, password, token, member_id)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`
-	var lastInsertId uint64 = 0
-	err = tx.QueryRowContext(
-		ctx, query,
-		user.Email, user.Phone, user.Password, user.Token, user.MemberID,
-	).Scan(&lastInsertId)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	query = `
-		UPDATE members SET user_id = $1 WHERE id = $2
-	`
-	_, err = tx.ExecContext(
-		ctx, query,
-		lastInsertId, user.MemberID,
-	)
-	if err != nil {
-		tx.Rollback()
-		return 0, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-
-	return lastInsertId, err
+func (q *Queries) DoesMemberExist(ctx context.Context, phone string) (bool, error) {
+	user, err := q.GetUserByUsername(ctx, GetUserByUsernameParams{Phone: phone, Email: phone})
+	return (user != nil), err
 }
 
-func (d *Database) FindMemberByUsername(ctx context.Context, phone, email string) (*models.Member, error) {
+const updateMemberUserID = `
+UPDATE members SET user_id = $1 WHERE id = $2
+`
+
+type UpdateMemberUserIDParams struct {
+	MemberID uint64
+	UserID   uint64
+}
+
+func (q *Queries) UpdateMemberUserID(ctx context.Context, arg UpdateMemberUserIDParams) error {
+	_, err := q.db.ExecContext(
+		ctx,
+		updateMemberUserID,
+		arg.UserID, arg.MemberID,
+	)
+	return err
+}
+
+const createUser = `
+INSERT INTO users(email, phone, password, token, member_id)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, phone, password, token, member_id
+`
+
+type CreateUserParams struct {
+	Phone    string
+	Email    string
+	Password string
+	Token    string
+	MemberID uint64
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*models.User, error) {
+	var user *models.User
+
+	err := q.db.QueryRowContext(
+		ctx, createUser,
+		arg.Email, arg.Phone, arg.Password, arg.Token, arg.MemberID,
+	).Scan(
+		&user.ID,
+		&user.Phone,
+		&user.Email,
+		&user.Password,
+		&user.Token,
+		&user.MemberID,
+	)
+	return user, err
+}
+
+const getMemberByPhoneNumber = `
+	SELECT id, first_name, last_name, sex, phone, email
+	FROM members
+	WHERE (phone = $1) OR (email = $2)
+`
+
+type GetMemberByUsernameParams struct {
+	Phone string
+	Email string
+}
+
+func (q *Queries) GetMemberByUsername(ctx context.Context, arg GetMemberByUsernameParams) (*models.Member, error) {
 	var user models.Member
 
-	query := `
-		SELECT id, first_name, last_name, sex, phone, email
-		FROM members
-		WHERE (phone = $1) OR (email = $2)
-	`
-	if err := d.DB.QueryRowContext(ctx, query, phone, email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Sex, &user.Phone, &user.Email); err == nil {
+	if err := q.db.QueryRowContext(ctx, getMemberByPhoneNumber, arg.Phone, arg.Email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Sex, &user.Phone, &user.Email); err == nil {
 		return &user, nil
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindMemberByUsername ", zap.Error(err))
 		return nil, err
 	}
 }
 
-func (d *Database) FindMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error) {
-	return d.FindMemberByUsername(ctx, phone, phone)
+func (q *Queries) GetMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error) {
+	return q.GetMemberByUsername(ctx, GetMemberByUsernameParams{Phone: phone, Email: phone})
 }
 
-func (d *Database) FindMemberByEmail(ctx context.Context, email string) (*models.Member, error) {
-	return d.FindMemberByUsername(ctx, email, email)
+func (q *Queries) GetMemberByEmail(ctx context.Context, email string) (*models.Member, error) {
+	return q.GetMemberByUsername(ctx, GetMemberByUsernameParams{Phone: email, Email: email})
 }
 
-func (d *Database) FindMemberByID(ctx context.Context, id uint64) (*models.Member, error) {
+const getMemberByID = `
+	SELECT id, first_name, last_name, sex, phone, email
+	FROM members
+	WHERE (id = $1)
+`
+
+func (q *Queries) GetMemberByID(ctx context.Context, id uint64) (*models.Member, error) {
 	var member models.Member
 
-	query := `
-		SELECT id, first_name, last_name, sex, phone, email
-		FROM members
-		WHERE (id = $1)
-	`
-	if err := d.DB.QueryRowContext(ctx, query, id).Scan(&member.ID, &member.FirstName, &member.LastName, &member.Sex, &member.Phone, &member.Email); err == nil {
+	if err := q.db.QueryRowContext(ctx, getMemberByID, id).Scan(&member.ID, &member.FirstName, &member.LastName, &member.Sex, &member.Phone, &member.Email); err == nil {
 		return &member, nil
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindMemberByUsername ", zap.Error(err))
 		return nil, err
 	}
 }
 
-func (d *Database) CreateMember(ctx context.Context, member models.Member) (uint64, error) {
-	d.log.Info("create member", zap.String("firstname", member.FirstName), zap.String("lastname", member.LastName))
-	query := `
-		INSERT INTO members(first_name, last_name, sex, email, phone)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id
-	`
-	var lastInsertId uint64 = 0
-	err := d.DB.QueryRowContext(
-		ctx, query,
-		member.FirstName, member.LastName, member.Sex, member.Email, member.Phone,
-	).Scan(&lastInsertId)
-	d.log.Info("Create Member : ", zap.Error(err))
-	return lastInsertId, err
+const createMember = `
+	INSERT INTO members(first_name, last_name, sex, email, phone)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id, first_name, last_name, sex, email, phone
+`
+
+type CreateMemberParams struct {
+	FirstName string
+	LastName  string
+	Sex       string
+	Email     string
+	Phone     string
 }
 
-func (d *Database) UpdateMember(ctx context.Context, member models.Member) error {
-	query := `
-		UPDATE members
-		SET first_name = $1, last_name = $2, email = $3, sex = $4, phone = $5
-		WHERE id = $6
-	`
-	_, err := d.DB.ExecContext(
-		ctx, query,
-		member.FirstName, member.LastName, member.Email, member.Sex, member.Phone, member.ID,
+func (q *Queries) CreateMember(ctx context.Context, arg CreateMemberParams) (*models.Member, error) {
+	var member *models.Member
+
+	err := q.db.QueryRowContext(
+		ctx,
+		createMember,
+		arg.FirstName, arg.LastName, arg.Sex, arg.Email, arg.Phone,
+	).Scan(
+		&member.ID,
+		&member.FirstName,
+		&member.LastName,
+		&member.Sex,
+		&member.Email,
+		&member.Phone,
+	)
+
+	return member, err
+}
+
+const updateMember = `
+	UPDATE members
+	SET first_name = $1, last_name = $2, email = $3, sex = $4, phone = $5
+	WHERE id = $6
+`
+
+type UpdateMemberParams struct {
+	FirstName string
+	LastName  string
+	Email     string
+	Sex       string
+	Phone     string
+	ID        uint64
+}
+
+func (q *Queries) UpdateMember(ctx context.Context, arg UpdateMemberParams) error {
+
+	_, err := q.db.ExecContext(
+		ctx, updateMember,
+		arg.FirstName, arg.LastName, arg.Email, arg.Sex, arg.Phone, arg.ID,
 	)
 	if err != nil {
 		return err

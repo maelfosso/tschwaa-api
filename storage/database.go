@@ -2,17 +2,18 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
 // Database is the relational storage abstraction
 type Database struct {
-	DB                    *sqlx.DB
+	Storage               Storage
+	db                    *sql.DB
 	host                  string
 	port                  int
 	user                  string
@@ -70,18 +71,24 @@ func (d *Database) createDataSourceName(withPassword bool) string {
 		d.user, password, d.host, d.port, d.name)
 }
 
+func (d *Database) dsn() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		d.host, d.port, d.user, d.password, d.name,
+	)
+}
+
 // Connect to the database
 func (d *Database) Connect() error {
 	d.log.Info("Connecting to database", zap.String("url", d.createDataSourceName(true)))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var err error
-	d.DB, err = sqlx.ConnectContext(ctx, "pgx", d.createDataSourceName(true))
+	d.db, err = sql.Open("postgres", d.dsn())
 	if err != nil {
 		return err
 	}
+
+	d.Storage = NewStorage(d.db)
 
 	d.log.Debug(
 		"Setting connection pool options",
@@ -91,10 +98,10 @@ func (d *Database) Connect() error {
 		zap.Duration("connection max idle time", d.connectionMaxIdleTime),
 	)
 
-	d.DB.SetMaxOpenConns(d.maxOpenConnections)
-	d.DB.SetMaxIdleConns(d.maxIdleConnections)
-	d.DB.SetConnMaxLifetime(d.connectionMaxIdleTime)
-	d.DB.SetConnMaxIdleTime(d.connectionMaxIdleTime)
+	d.db.SetMaxOpenConns(d.maxOpenConnections)
+	d.db.SetMaxIdleConns(d.maxIdleConnections)
+	d.db.SetConnMaxLifetime(d.connectionMaxIdleTime)
+	d.db.SetConnMaxIdleTime(d.connectionMaxIdleTime)
 
 	return nil
 }
@@ -104,9 +111,9 @@ func (d *Database) Ping(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 
-	if err := d.DB.PingContext(ctx); err != nil {
+	if err := d.db.PingContext(ctx); err != nil {
 		return err
 	}
-	_, err := d.DB.ExecContext(ctx, `select 1`)
+	_, err := d.db.ExecContext(ctx, `select 1`)
 	return err
 }
