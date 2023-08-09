@@ -5,9 +5,6 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"github.com/dgrijalva/jwt-go"
-	"golang.org/x/crypto/bcrypt"
 )
 
 var emailAddressMatcher = regexp.MustCompile(
@@ -52,28 +49,6 @@ func (u *User) IsValid() bool {
 	return true
 }
 
-func (u *User) HashPassword() error {
-	var passwordBytes = []byte(u.Password)
-
-	// Hash password with Bcrypt MinCost
-	hashedPassword, err := bcrypt.GenerateFromPassword(passwordBytes, bcrypt.MinCost)
-	if err != nil {
-		return nil
-	}
-
-	// Cast the hashedPassword to string
-	u.Password = string(hashedPassword)
-	return nil
-}
-
-func (u *User) IsPasswordMatched(currentPassword string) bool {
-	err := bcrypt.CompareHashAndPassword(
-		[]byte(currentPassword),
-		[]byte(u.Password),
-	)
-	return err == nil
-}
-
 type Member struct {
 	ID        uint64 `json:"id,omitempty"`
 	FirstName string `json:"first_name,omitempty"`
@@ -115,49 +90,9 @@ func (u *Member) IsValid() bool {
 	return true
 }
 
-type SignUpInputs struct {
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name,omitempty"`
-	Sex       string `json:"sex,omitempty"`
-	Phone     string `json:"phone,omitempty"`
-	Email     string `json:"email,omitempty"`
-	Password  string `json:"password,omitempty"`
-}
-
-type SignInInputs struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-type SignInResult struct {
-	ID    uint64 `json:"id,omitempty"`
-	Name  string `json:"name",omitempty`
-	Email string `json:"email",omitempty`
-	Token string `json:"access_token",omitempty`
-}
-
-type JwtClaims struct {
-	User Member
-	jwt.StandardClaims
-}
-
-type JoinOrganizationInputs struct {
-	ID        uint64 `json:"id,omitempty"`
-	FirstName string `json:"first_name,omitempty"`
-	LastName  string `json:"last_name,omitempty"`
-	Sex       string `json:"sex,omitempty"`
-	Phone     string `json:"phone,omitempty"`
-	Email     string `json:"email,omitempty"`
-	Password  string `json:"password,omitempty"`
-	Code      string `json:"code,omitempty"`
-}
-
-type JoinOrganizationResults struct {
-	Code         string       `json:"code,omitempty"`
-	Active       bool         `json:"active,omitempty"`
-	Link         string       `json:"link,omitempty"`
-	CreatedAt    time.Time    `json:"created_at,omitempty"`
-	Adhesion     *Adhesion    `json:"adhesion,omitempty"`
-	Member       Member       `json:"member,omitempty"`
-	Organization Organization `json:"organization,omitempty"`
+type OTP struct {
+	WaMessageId string `json:"wa_message_id,omitempty"`
+	Phone       string `json:"phone,omitempty"`
+	PinCode     string `json:"pin_code,omitempty"`
+	Active      bool   `json:"active,omitempty"`
 }

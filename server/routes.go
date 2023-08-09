@@ -66,8 +66,8 @@ func (s *Server) setupRoutes() {
 		handlers.Health(s.mux)
 
 		r.Route("/auth/", func(r chi.Router) {
-			handlers.Signup(r, s.database)
-			handlers.Signin(r, s.database)
+			handlers.Signup(r, s.database.Storage)
+			handlers.Signin(r, s.database.Storage)
 			handlers.GetOTP(r, s.database)
 			handlers.CheckOTP(r, s.database)
 			handlers.ResendOTP(r, s.database)

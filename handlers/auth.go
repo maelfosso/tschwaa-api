@@ -15,7 +15,9 @@ import (
 	"go.uber.org/zap"
 	"tschwaa.com/api/helpers"
 	"tschwaa.com/api/models"
+	"tschwaa.com/api/requests"
 	"tschwaa.com/api/services"
+	"tschwaa.com/api/storage"
 )
 
 type SignUpInputs struct {
@@ -36,6 +38,7 @@ type SignInResult struct {
 	ID    uint64 `json:"id,omitempty"`
 	Name  string `json:"name",omitempty`
 	Email string `json:"email",omitempty`
+	Phone string `json:"phone,omitempty"`
 	Token string `json:"access_token",omitempty`
 }
 
@@ -45,11 +48,11 @@ type JwtClaims struct {
 }
 
 type authWeb interface {
-	FindMemberByUsername(ctx context.Context, phone, email string) (*models.Member, error)
-	CreateMember(ctx context.Context, member models.Member) (uint64, error)
-	CreateUser(ctx context.Context, user models.User) (uint64, error)
-	FindUserByUsername(ctx context.Context, phone, email string) (*models.User, error)
-	FindMemberByID(ctx context.Context, id uint64) (*models.Member, error)
+	GetMemberByUsername(ctx context.Context, arg storage.GetMemberByUsernameParams) (*models.Member, error)
+	CreateMember(ctx context.Context, arg storage.CreateMemberParams) (*models.Member, error)
+	CreateUserWithMemberTx(ctx context.Context, arg storage.CreateUserWithMemberParams) (uint64, error)
+	GetUserByUsername(ctx context.Context, arg storage.GetUserByUsernameParams) (*models.User, error)
+	GetMemberByID(ctx context.Context, id uint64) (*models.Member, error)
 }
 
 func createSecret() (string, error) {
@@ -67,73 +70,68 @@ func Signup(mux chi.Router, s authWeb) {
 
 		decoder := json.NewDecoder(r.Body)
 
-		var data SignUpInputs
-		if err := decoder.Decode(&data); err != nil {
+		var inputs SignUpInputs
+		if err := decoder.Decode(&inputs); err != nil {
 			log.Println("error decoding the user model", err)
 			http.Error(w, "error decoding the user model", http.StatusBadRequest)
 			return
 		}
 
-		var member models.Member
-		member.FirstName = data.FirstName
-		member.LastName = data.LastName
-		member.Sex = data.Sex
-		member.Phone = data.Phone
-		member.Email = data.Email
-
-		var user models.User
-		user.Password = data.Password
-		user.Phone = data.Phone
-		user.Email = data.Email
-
-		if !user.IsValid() {
-			// log.Info("Error SignUp", zap.Error(fmt.Errorf("user is invalid")))
-			http.Error(w, "user is invalid", http.StatusBadRequest)
-			return
-		}
-
 		// Check if a user with the same email exist
-		existingMember, err := s.FindMemberByUsername(ctx, user.Phone, user.Email)
+		existingMember, err := s.GetMemberByUsername(ctx, storage.GetMemberByUsernameParams{
+			Phone: inputs.Phone,
+			Email: inputs.Email,
+		}) // user.Phone, user.Email)
 		if err != nil || existingMember != nil {
 			err := fmt.Errorf("member with the email/phone already exists: %w", err)
-			log.Println("Error FindMemberByUsername", zap.Error(err))
+			log.Println("Error GetMemberByUsername", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		mID, err := s.CreateMember(ctx, member)
+		createdMember, err := s.CreateMember(ctx, storage.CreateMemberParams{
+			FirstName: inputs.FirstName,
+			LastName:  inputs.LastName,
+			Sex:       inputs.Sex,
+			Email:     inputs.Email,
+			Phone:     inputs.Phone,
+		})
 		if err != nil {
 			err = fmt.Errorf("error when creating the member: %w", err)
 			log.Println("Error CreateMember", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		member.ID = mID
-		user.MemberID = mID
 
-		// Hash the password
-		if err := user.HashPassword(); err != nil {
-			log.Println("Error HashPassword", zap.Error(err))
+		// // Hash the password
+		hashedPassword := services.HashPassword(inputs.Password)
+		if hashedPassword != "" {
+			log.Println("Error HashPassword")
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		// Get the token - Next will have token for email and token for sms
-		// token, err := createSecret()
-		// if err != nil {
-		// 	log.Println("Error createSecret", zap.Error(err))
-		// 	http.Error(w, err.Error(), http.StatusBadRequest)
-		// 	return
-		// }
+		token, err := createSecret()
+		if err != nil {
+			log.Println("Error createSecret", zap.Error(err))
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
-		uID, err := s.CreateUser(ctx, user)
+		_, err = s.CreateUserWithMemberTx(ctx, storage.CreateUserWithMemberParams{
+			Phone:    inputs.Phone,
+			Email:    inputs.Email,
+			Password: hashedPassword,
+			Token:    token,
+			MemberID: createdMember.ID,
+		})
 		if err != nil {
 			err = fmt.Errorf("error when creating the user: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		member.UserID = uID
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -158,7 +156,10 @@ func Signin(mux chi.Router, s authWeb) {
 			return
 		}
 
-		existingUser, err := s.FindUserByUsername(ctx, credentials.Username, credentials.Username)
+		existingUser, err := s.GetUserByUsername(ctx, storage.GetUserByUsernameParams{
+			Phone: credentials.Username,
+			Email: credentials.Username,
+		})
 		if err != nil || existingUser == nil {
 			err = fmt.Errorf("user with that username does not exist: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
@@ -166,14 +167,14 @@ func Signin(mux chi.Router, s authWeb) {
 			return
 		}
 
-		if existingUser.IsPasswordMatched(credentials.Password) {
+		if services.IsPasswordMatched(credentials.Password, existingUser.Password) {
 			err = fmt.Errorf("the password is not correct: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
-		existingMember, err := s.FindMemberByID(ctx, existingUser.MemberID)
+		existingMember, err := s.GetMemberByID(ctx, existingUser.MemberID)
 		if err != nil || existingMember == nil {
 			err = fmt.Errorf("member related to the user does not exist: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
