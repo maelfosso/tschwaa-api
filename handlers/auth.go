@@ -176,11 +176,11 @@ func Signin(mux chi.Router, s authWeb) {
 }
 
 type authMobile interface {
-	CreateUserIfNotExists(ctx context.Context, phoneNumber, name string) error
+	DoesMemberExist(ctx context.Context, phoneNumber, name string) error
 	CreateOTP(ctx context.Context, pinCode models.OTP) error
 	SaveOTP(ctx context.Context, pinCode models.OTP) error
 	CheckOTP(ctx context.Context, phoneNumber, pinCode string) (*models.OTP, error)
-	FindUserByPhoneNumber(ctx context.Context, phoneNumber string) (*models.User, error)
+	GetMemberByPhone(ctx context.Context, phoneNumber string) (*models.User, error)
 }
 
 type GetOTPRequest struct {
@@ -208,12 +208,15 @@ func GetOTP(mux chi.Router, a authMobile) {
 			return
 		}
 
+		// check if the user exists as a member
+		// if the user doesn't exist then ask him to create an account using the web app
+
 		// generate the pin code of 4 digits
 		now := time.Now()
 		pinCode := helpers.GenerateOTP(now)
 
 		// send the pin code to a the phone number using Whatsapp API
-		res, err := SendWoZOTP(
+		res, err := requests.SendTschwaaOTP(
 			input.PhoneNumber,
 			input.Language,
 			pinCode,
@@ -221,14 +224,6 @@ func GetOTP(mux chi.Router, a authMobile) {
 		if err != nil {
 			log.Println("error when sending the OTP via WhatsApp: ", err)
 			http.Error(w, "ERR_COTP_150", http.StatusBadRequest)
-			return
-		}
-
-		// check if there is an user with this account
-		err = a.CreateUserIfNotExists(r.Context(), input.PhoneNumber, "")
-		if err != nil {
-			log.Println("error when creating the user if he does not exist: ", err)
-			http.Error(w, "ERR_COTP_151", http.StatusBadRequest)
 			return
 		}
 
@@ -289,7 +284,7 @@ func CheckOTP(mux chi.Router, a authMobile) {
 		}
 
 		// Generating the JWT Token
-		u, err := a.FindUserByPhoneNumber(r.Context(), input.PhoneNumber)
+		u, err := a.GetUserByPhoneNumber(r.Context(), input.PhoneNumber)
 		if err != nil {
 			log.Println("error when looking for user: ", err)
 			http.Error(w, "ERR_COTP_104", http.StatusBadRequest)
@@ -298,7 +293,7 @@ func CheckOTP(mux chi.Router, a authMobile) {
 
 		var signInResult SignInResult
 		signInResult.Name = u.Name
-		signInResult.PhoneNumber = u.PhoneNumber
+		signInResult.Phone = u.PhoneNumber
 
 		tokenString, err := services.GenerateJWTToken(structs.Map(signInResult))
 		if err != nil {

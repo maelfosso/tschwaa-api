@@ -26,6 +26,27 @@ type joinOrganization interface {
 	ApprovedAdhesion(ctx context.Context, adhesionId uint64) error
 }
 
+type JoinOrganizationInputs struct {
+	ID        uint64 `json:"id,omitempty"`
+	FirstName string `json:"first_name,omitempty"`
+	LastName  string `json:"last_name,omitempty"`
+	Sex       string `json:"sex,omitempty"`
+	Phone     string `json:"phone,omitempty"`
+	Email     string `json:"email,omitempty"`
+	Password  string `json:"password,omitempty"`
+	Code      string `json:"code,omitempty"`
+}
+
+type JoinOrganizationResults struct {
+	Code         string              `json:"code,omitempty"`
+	Active       bool                `json:"active,omitempty"`
+	Link         string              `json:"link,omitempty"`
+	CreatedAt    time.Time           `json:"created_at,omitempty"`
+	Adhesion     *models.Adhesion    `json:"adhesion,omitempty"`
+	Member       models.Member       `json:"member,omitempty"`
+	Organization models.Organization `json:"organization,omitempty"`
+}
+
 func GetInvitation(mux chi.Router, d getInvitation) {
 	mux.Get("/{joinId}", func(w http.ResponseWriter, r *http.Request) {
 		joinId := chi.URLParamFromCtx(r.Context(), "joinId")
@@ -77,7 +98,7 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 
-		var result models.JoinOrganizationResults
+		var result JoinOrganizationResults
 		result.Link = invitation.Link
 		result.Member = invitation.Member
 		result.Organization = invitation.Organization
@@ -142,7 +163,7 @@ func JoinOrganization(mux chi.Router, j joinOrganization) {
 		}
 		decoder := json.NewDecoder(r.Body)
 
-		var data models.JoinOrganizationInputs
+		var data JoinOrganizationInputs
 		if err := decoder.Decode(&data); err != nil {
 			log.Println("error when decoding the organization json data", err)
 			http.Error(w, "ERR_JOIN_611", http.StatusBadRequest)

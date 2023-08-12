@@ -24,7 +24,7 @@ type getOrgMembers interface {
 
 type inviteMembersIntoOrganization interface {
 	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
-	FindMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error)
+	GetMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error)
 	CreateMember(ctx context.Context, member models.Member) (uint64, error)
 	CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error)
 	CreateInvitation(ctx context.Context, joinId string, adhesionId uint64) (uint64, error)
@@ -99,7 +99,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 
 				log.Println("Start Processing - ", member)
 				// Check if a member with the same phone number exist
-				existingMember, err := o.FindMemberByPhoneNumber(r.Context(), member.Phone)
+				existingMember, err := o.GetMemberByPhoneNumber(r.Context(), member.Phone)
 				if err != nil {
 					log.Println("error when checking if member with phone number already exists", err)
 					channel <- invitationSentResponse{

@@ -1,6 +1,11 @@
 package services
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"crypto/rand"
+	"fmt"
+
+	"golang.org/x/crypto/bcrypt"
+)
 
 func HashPassword(password string) string {
 	var passwordBytes = []byte(password)
@@ -13,6 +18,15 @@ func HashPassword(password string) string {
 
 	// Cast the hashedPassword to string
 	return string(hashedPassword)
+}
+
+func CreateSecret() (string, error) {
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", secret), nil
 }
 
 func IsPasswordMatched(currentPassword, password string) bool {

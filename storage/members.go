@@ -57,7 +57,7 @@ func (d *Database) GetOrganizationMembers(ctx context.Context, orgId uint64) ([]
 	return members, nil
 }
 
-func (d *Database) FindAdhesionByMemberAndOrg(ctx context.Context, memberId, orgId uint64) (*models.Adhesion, error) {
+func (d *Database) GetAdhesionByMemberAndOrg(ctx context.Context, memberId, orgId uint64) (*models.Adhesion, error) {
 	var adhesion models.Adhesion
 
 	query := `
@@ -70,12 +70,12 @@ func (d *Database) FindAdhesionByMemberAndOrg(ctx context.Context, memberId, org
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindAdhesionByMemberAndOrg ", zap.Error(err))
+		d.log.Info("Error GetAdhesionByMemberAndOrg ", zap.Error(err))
 		return nil, err
 	}
 }
 
-func (d *Database) FindAdhesionById(ctx context.Context, adhesionId uint64) (*models.Adhesion, error) {
+func (d *Database) GetAdhesionById(ctx context.Context, adhesionId uint64) (*models.Adhesion, error) {
 	var adhesion models.Adhesion
 
 	query := `
@@ -88,13 +88,13 @@ func (d *Database) FindAdhesionById(ctx context.Context, adhesionId uint64) (*mo
 	} else if err == sql.ErrNoRows {
 		return nil, nil
 	} else {
-		d.log.Info("Error FindMemberByUsername ", zap.Error(err))
+		d.log.Info("Error GetMemberByUsername ", zap.Error(err))
 		return nil, err
 	}
 }
 
 func (d *Database) CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error) {
-	adhesion, err := d.FindAdhesionByMemberAndOrg(ctx, memberId, orgId)
+	adhesion, err := d.GetAdhesionByMemberAndOrg(ctx, memberId, orgId)
 	if err != nil {
 		return 0, err
 	}
@@ -127,7 +127,7 @@ func (d *Database) CreateAdhesion(ctx context.Context, memberId, orgId uint64, j
 
 func (d *Database) CreateInvitation(ctx context.Context, link string, adhesionId uint64) (uint64, error) {
 	var mid sql.NullInt64
-	adhesion, err := d.FindAdhesionById(ctx, adhesionId)
+	adhesion, err := d.GetAdhesionById(ctx, adhesionId)
 	if err != nil {
 		return 0, err
 	}
