@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"crypto/sha512"
-	"database/sql"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -19,7 +18,7 @@ import (
 )
 
 type getOrgMembers interface {
-	GetOrganizationMembers(ctx context.Context, orgId uint64) ([]models.OrganizationMember, error)
+	GetMembersFromOrganization(ctx context.Context, organizationID uint64) ([]*models.OrganizationMember, error)
 }
 
 type inviteMembersIntoOrganization interface {
@@ -36,15 +35,11 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID: ", orgId)
 
-		members, err := o.GetOrganizationMembers(r.Context(), orgId)
+		members, err := o.GetMembersFromOrganization(r.Context(), orgId)
 		if err != nil {
-			if err == sql.ErrNoRows {
-				members = []models.OrganizationMember{}
-			} else {
-				log.Println("error occured when get information about the organization", err)
-				http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
-				return
-			}
+			log.Println("error occured when get information about the organization", err)
+			http.Error(w, "error occured when get information about the organization", http.StatusBadRequest)
+			return
 		}
 		log.Println("GEt Organization Members ", members)
 

@@ -35,14 +35,14 @@ type OrganizationMember struct {
 	Role     string `json:"role,omitempty"`
 	Status   string `json:"status,omitempty"`
 
-	Joined  bool      `json:"joined,omitempty"`
-	JointAt time.Time `json:"joined_at,omitempty"`
+	Joined   bool      `json:"joined,omitempty"`
+	JoinedAt time.Time `json:"joined_at,omitempty"`
 }
 
 type Adhesion struct {
-	ID       uint64 `json:"id,omitempty"`
-	MemberID uint64 `json:"member_id,omitempty"`
-	OrgID    uint64 `json:"org_id,omitempty"`
+	ID             uint64 `json:"id,omitempty"`
+	MemberID       uint64 `json:"member_id,omitempty"`
+	OrganizationID uint64 `json:"org_id,omitempty"`
 
 	Joined   bool      `json:"joined,omitempty"`
 	JoinedAt time.Time `json:"joined_at,omitempty"`

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 
 	"tschwaa.com/api/models"
 )
@@ -23,6 +24,15 @@ type Querier interface {
 	DeactivateOTP(ctx context.Context, id uint64) error
 	GetActiveOTPFromPhone(ctx context.Context, phone string) (*models.Otp, error)
 	CheckOTP(ctx context.Context, arg CheckOTPParams) (*models.Otp, error)
+	// Organization
+	CreateOrganization(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
+	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
+	ListOrganizationOfMember(ctx context.Context, memberID uint64) ([]*models.Organization, error)
+	ListOrganizations(ctx context.Context) ([]*models.Organization, error)
+	ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error)
+	// Adhesion
+	CreateAdhesion(ctx context.Context, arg CreateAdhesionParams) (*models.Adhesion, error)
+	GetMembersFromOrganization(ctx context.Context, organizationID uint64) ([]*models.OrganizationMember, error)
 }
 
 type QuerierTx interface {
@@ -31,6 +41,8 @@ type QuerierTx interface {
 	CreateMemberWithAssociatedUserTx(ctx context.Context, arg CreateMemberWithAssociatedUserParams) error
 	// Otp
 	CreateOTPTx(ctx context.Context, arg CreateOTPParams) (*models.Otp, error)
+	// Organization
+	CreateOrganizationWithAdhesionTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
 }
 
 var _ Querier = (*Queries)(nil)

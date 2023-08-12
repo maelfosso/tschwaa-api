@@ -11,54 +11,51 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"tschwaa.com/api/models"
+	"tschwaa.com/api/storage"
 )
 
 type createOrg interface {
-	CreateOrganization(ctx context.Context, org models.Organization) (uint64, error)
-	CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error)
+	CreateOrganizationWithAdhesionTx(ctx context.Context, arg storage.CreateOrganizationParams) (*models.Organization, error)
 }
 
 type listOrg interface {
-	ListAllOrganizationFromMember(ctx context.Context, id uint64) ([]models.Organization, error)
+	ListOrganizationOfMember(ctx context.Context, memberID uint64) ([]*models.Organization, error)
 }
 
 type getOrg interface {
-	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
+	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
+}
+
+type CreateOrganizationRequest struct {
+	Name        string `json:"name,omitempty" validate:"nonzero,nonnil"`
+	Description string `json:"description,omitempty"`
 }
 
 func CreateOrganization(mux chi.Router, o createOrg) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		decoder := json.NewDecoder(r.Body)
 
-		var org models.Organization
-		if err := decoder.Decode(&org); err != nil {
+		var inputs CreateOrganizationRequest
+		if err := decoder.Decode(&inputs); err != nil {
 			http.Error(w, "error when decoding the organization json data", http.StatusBadRequest)
 			return
 		}
 
 		currentMember := GetCurrentMember(r)
-		org.CreatedBy = currentMember.ID
 
-		if !org.IsValid() {
-			http.Error(w, "error - organization is not valid", http.StatusBadRequest)
-			return
-		}
-
-		orgId, err := o.CreateOrganization(r.Context(), org)
+		org, err := o.CreateOrganizationWithAdhesionTx(r.Context(), storage.CreateOrganizationParams{
+			Name:        inputs.Name,
+			Description: &inputs.Description,
+			CreatedBy:   &currentMember.ID,
+		})
 		if err != nil {
 			http.Error(w, "error when creating the organization", http.StatusBadRequest)
 			return
 		}
 
-		_, err = o.CreateAdhesion(r.Context(), currentMember.ID, uint64(orgId), true)
-		if err != nil {
-			http.Error(w, "error when creating adhesion", http.StatusBadRequest)
-			return
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err = json.NewEncoder(w).Encode(orgId); err != nil {
+		if err = json.NewEncoder(w).Encode(org.ID); err != nil {
 			http.Error(w, "error when encoding the request response", http.StatusBadRequest)
 			return
 		}
@@ -70,7 +67,7 @@ func ListOrganizations(mux chi.Router, o listOrg) {
 
 		fmt.Println("JWT Claims - ", GetCurrentMember(r))
 		currentMember := GetCurrentMember(r)
-		orgs, err := o.ListAllOrganizationFromMember(r.Context(), uint64(currentMember.ID))
+		orgs, err := o.ListOrganizationOfMember(r.Context(), currentMember.ID)
 		if err != nil {
 			http.Error(w, "error occured when fetching the organizations", http.StatusBadRequest)
 			return
