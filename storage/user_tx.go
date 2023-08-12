@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"tschwaa.com/api/services"
+	"tschwaa.com/api/helpers"
 )
 
 type CreateUserWithMemberParams struct {
@@ -60,13 +60,13 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		}
 
 		// Hash the password
-		hashedPassword := services.HashPassword(arg.Password)
+		hashedPassword := helpers.HashPassword(arg.Password)
 		if hashedPassword != "" {
 			return fmt.Errorf("error when hashing the password: %w", err.Error())
 		}
 
 		// Get the token - Next will have token for email and token for sms
-		token, err := services.CreateSecret()
+		token, err := helpers.CreateSecret()
 		if err != nil {
 			return fmt.Errorf("Error createSecret: %w", err)
 		}

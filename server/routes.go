@@ -68,9 +68,9 @@ func (s *Server) setupRoutes() {
 		r.Route("/auth/", func(r chi.Router) {
 			handlers.Signup(r, s.database.Storage)
 			handlers.Signin(r, s.database.Storage)
-			handlers.GetOTP(r, s.database)
-			handlers.CheckOTP(r, s.database)
-			handlers.ResendOTP(r, s.database)
+			handlers.GetOtp(r, s.database.Storage)
+			handlers.CheckOtp(r, s.database.Storage)
+			handlers.ResendOtp(r, s.database.Storage)
 		})
 
 		r.Route("/token", func(r chi.Router) {

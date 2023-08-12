@@ -30,7 +30,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, arg GetUserByUsernamePa
 	}
 }
 
-func (q *Queries) DoesMemberExist(ctx context.Context, phone string) (bool, error) {
+func (q *Queries) DoesUserExist(ctx context.Context, phone string) (bool, error) {
 	user, err := q.GetUserByUsername(ctx, GetUserByUsernameParams{Phone: phone, Email: phone})
 	return (user != nil), err
 }
@@ -107,7 +107,7 @@ func (q *Queries) GetMemberByUsername(ctx context.Context, arg GetMemberByUserna
 	}
 }
 
-func (q *Queries) GetMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error) {
+func (q *Queries) GetMemberByPhone(ctx context.Context, phone string) (*models.Member, error) {
 	return q.GetMemberByUsername(ctx, GetMemberByUsernameParams{Phone: phone, Email: phone})
 }
 

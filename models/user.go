@@ -89,10 +89,3 @@ func (u *Member) IsValid() bool {
 
 	return true
 }
-
-type OTP struct {
-	WaMessageId string `json:"wa_message_id,omitempty"`
-	Phone       string `json:"phone,omitempty"`
-	PinCode     string `json:"pin_code,omitempty"`
-	Active      bool   `json:"active,omitempty"`
-}

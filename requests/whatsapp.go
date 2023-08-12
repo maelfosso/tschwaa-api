@@ -139,7 +139,7 @@ func SendMessageTextFromTemplate(to, template, language, parameters string) (*Wh
 	return &data, nil
 }
 
-func SendTschwaaOTP(to, language, pinCode string) (*WhatsappSendMessageResponse, error) {
+func SendTschwaaOtp(to, language, pinCode string) (*WhatsappSendMessageResponse, error) {
 	parameters := fmt.Sprintf(`[
 		{
 			"type": "text",
