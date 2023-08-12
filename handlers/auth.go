@@ -51,6 +51,7 @@ type authWeb interface {
 	GetMemberByUsername(ctx context.Context, arg storage.GetMemberByUsernameParams) (*models.Member, error)
 	CreateMember(ctx context.Context, arg storage.CreateMemberParams) (*models.Member, error)
 	CreateUserWithMemberTx(ctx context.Context, arg storage.CreateUserWithMemberParams) (uint64, error)
+	CreateMemberWithAssociatedUserTx(ctx context.Context, arg storage.CreateMemberWithAssociatedUserParams) error
 	GetUserByUsername(ctx context.Context, arg storage.GetUserByUsernameParams) (*models.User, error)
 	GetMemberByID(ctx context.Context, id uint64) (*models.Member, error)
 }
@@ -89,7 +90,7 @@ func Signup(mux chi.Router, s authWeb) {
 			return
 		}
 
-		createdMember, err := s.CreateMember(ctx, storage.CreateMemberParams{
+		err = s.CreateMemberWithAssociatedUserTx(ctx, storage.CreateMemberWithAssociatedUserParams{
 			FirstName: inputs.FirstName,
 			LastName:  inputs.LastName,
 			Sex:       inputs.Sex,
@@ -97,38 +98,7 @@ func Signup(mux chi.Router, s authWeb) {
 			Phone:     inputs.Phone,
 		})
 		if err != nil {
-			err = fmt.Errorf("error when creating the member: %w", err)
-			log.Println("Error CreateMember", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		// // Hash the password
-		hashedPassword := services.HashPassword(inputs.Password)
-		if hashedPassword != "" {
-			log.Println("Error HashPassword")
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		// Get the token - Next will have token for email and token for sms
-		token, err := createSecret()
-		if err != nil {
-			log.Println("Error createSecret", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		_, err = s.CreateUserWithMemberTx(ctx, storage.CreateUserWithMemberParams{
-			Phone:    inputs.Phone,
-			Email:    inputs.Email,
-			Password: hashedPassword,
-			Token:    token,
-			MemberID: createdMember.ID,
-		})
-		if err != nil {
-			err = fmt.Errorf("error when creating the user: %w", err)
-			log.Println("Error CreateUser", zap.Error(err))
+			log.Println("Error CreateMemberWithAssociatedUserTx: ", err)
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

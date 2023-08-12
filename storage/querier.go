@@ -23,6 +23,7 @@ type Querier interface {
 type QuerierTx interface {
 	// User
 	CreateUserWithMemberTx(ctx context.Context, arg CreateUserWithMemberParams) (uint64, error)
+	CreateMemberWithAssociatedUserTx(ctx context.Context, arg CreateMemberWithAssociatedUserParams) error
 }
 
 var _ Querier = (*Queries)(nil)
