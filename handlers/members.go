@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"tschwaa.com/api/models"
 	"tschwaa.com/api/requests"
+	"tschwaa.com/api/storage"
 )
 
 type getOrgMembers interface {
@@ -22,11 +23,11 @@ type getOrgMembers interface {
 }
 
 type inviteMembersIntoOrganization interface {
-	GetOrganization(ctx context.Context, orgId uint64) (*models.Organization, error)
-	GetMemberByPhoneNumber(ctx context.Context, phone string) (*models.Member, error)
-	CreateMember(ctx context.Context, member models.Member) (uint64, error)
-	CreateAdhesion(ctx context.Context, memberId, orgId uint64, joined bool) (uint64, error)
-	CreateInvitation(ctx context.Context, joinId string, adhesionId uint64) (uint64, error)
+	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
+	GetMemberByPhone(ctx context.Context, phone string) (*models.Member, error)
+	CreateMember(ctx context.Context, arg storage.CreateMemberParams) (*models.Member, error)
+	CreateAdhesion(ctx context.Context, arg storage.CreateAdhesionParams) (*models.Adhesion, error)
+	CreateInvitationTx(ctx context.Context, arg storage.CreateAdhesionInvitationParams) (*models.Organization, error)
 }
 
 func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
@@ -94,7 +95,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 
 				log.Println("Start Processing - ", member)
 				// Check if a member with the same phone number exist
-				existingMember, err := o.GetMemberByPhoneNumber(r.Context(), member.Phone)
+				existingMember, err := o.GetMemberByPhone(r.Context(), member.Phone)
 				if err != nil {
 					log.Println("error when checking if member with phone number already exists", err)
 					channel <- invitationSentResponse{
@@ -108,7 +109,13 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 				// If member doesn't exist, create it
 				if existingMember == nil {
 					log.Println("error when creating a member", err)
-					memberId, err := o.CreateMember(r.Context(), member)
+					createdMember, err := o.CreateMember(r.Context(), storage.CreateMemberParams{
+						FirstName: member.FirstName,
+						LastName:  member.LastName,
+						Email:     member.Email,
+						Phone:     member.Phone,
+						Sex:       member.Sex,
+					})
 					if err != nil {
 						log.Println("error when creating a member", err)
 						channel <- invitationSentResponse{
@@ -118,7 +125,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 						}
 						return
 					}
-					member.ID = memberId
+					member.ID = createdMember.ID
 				} else {
 					member.ID = existingMember.ID
 					member.FirstName = existingMember.FirstName
@@ -147,18 +154,12 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					return
 				}
 
-				adhesionId, err := o.CreateAdhesion(r.Context(), member.ID, org.ID, false)
-				if err != nil {
-					log.Println("error when creating an adhesion to a member", err)
-					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     true,
-						Error:       "ERR_IMIO_513",
-					}
-					return
-				}
-
-				_, err = o.CreateInvitation(r.Context(), joinId, adhesionId)
+				_, err = o.CreateInvitationTx(r.Context(), storage.CreateAdhesionInvitationParams{
+					MemberID:       member.ID,
+					OrganizationID: org.ID,
+					Joined:         false,
+					JoinId:         joinId,
+				})
 				if err != nil {
 					log.Println("error when creating an invitation", err)
 					channel <- invitationSentResponse{

@@ -79,8 +79,8 @@ func (s *Server) setupRoutes() {
 		})
 
 		r.Route("/join/", func(r chi.Router) {
-			handlers.GetInvitation(r, s.database)
-			handlers.JoinOrganization(r, s.database)
+			handlers.GetInvitation(r, s.database.Storage)
+			handlers.JoinOrganization(r, s.database.Storage)
 		})
 
 	})

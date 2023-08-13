@@ -56,9 +56,13 @@ type Adhesion struct {
 }
 
 type Invitation struct {
-	Link         string       `json:"link,omitempty"`
-	Active       bool         `json:"active,omitempty"`
-	CreatedAt    time.Time    `json:"created_at,omitempty"`
+	ID        uint64    `json:"id,omitempty"`
+	Link      string    `json:"link,omitempty"`
+	Active    bool      `json:"active,omitempty"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+
+	AdhesionID   uint64
 	Adhesion     Adhesion     `json:"adhesion,omitempty"`
 	Member       Member       `json:"member,omitempty"`
 	Organization Organization `json:"organization,omitempty"`

@@ -10,6 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"tschwaa.com/api/models"
+	"tschwaa.com/api/storage"
 )
 
 const INVITATIION_TIME_OUT_AFTER_DAYS = 1
@@ -20,10 +21,8 @@ type getInvitation interface {
 
 type joinOrganization interface {
 	GetInvitation(ctx context.Context, link string) (*models.Invitation, error)
-	CreateUser(ctx context.Context, user models.User) (uint64, error)
-	UpdateMember(ctx context.Context, member models.Member) error
-	DisableInvitation(ctx context.Context, link string) (uint64, error)
-	ApprovedAdhesion(ctx context.Context, adhesionId uint64) error
+	CreateUserWithMemberTx(ctx context.Context, arg storage.CreateUserWithMemberParams) (uint64, error)
+	ApprovedInvitationTx(ctx context.Context, link string) error
 }
 
 type JoinOrganizationInputs struct {
@@ -182,38 +181,25 @@ func JoinOrganization(mux chi.Router, j joinOrganization) {
 			member.Phone = data.Phone
 			member.Email = data.Email
 
-			var user models.User
-			user.Password = data.Password
-			user.Phone = data.Phone
-			user.Email = data.Email
-			user.MemberID = data.ID
-
 			// The member already exists so, let's create the user (authentication)
-			uID, err := j.CreateUser(r.Context(), user)
+			_, err := j.CreateUserWithMemberTx(r.Context(), storage.CreateUserWithMemberParams{
+				Phone:    data.Phone,
+				Email:    data.Email,
+				Password: data.Password,
+				Token:    "",
+				MemberID: data.ID,
+			})
 			if err != nil {
 				log.Println("error when creating the user: %w", err)
 				http.Error(w, "ERR_JOIN_613", http.StatusBadRequest)
 				return
 			}
-
-			member.UserID = uID
-			if err := j.UpdateMember(r.Context(), member); err != nil {
-				log.Println("error when updating the member's information", err)
-				http.Error(w, "ERR_JOIN_612", http.StatusBadRequest)
-				return
-			}
 		}
 
-		adhesionId, err := j.DisableInvitation(r.Context(), joinId)
+		err = j.ApprovedInvitationTx(r.Context(), joinId)
 		if err != nil {
 			log.Println("error when closing invitation", err)
 			http.Error(w, "ERR_JOIN_613", http.StatusBadRequest)
-			return
-		}
-
-		if err := j.ApprovedAdhesion(r.Context(), adhesionId); err != nil {
-			log.Println("error when approving adhesion", err)
-			http.Error(w, "ERR_JOIN_614", http.StatusBadRequest)
 			return
 		}
 

@@ -33,6 +33,13 @@ type Querier interface {
 	// Adhesion
 	CreateAdhesion(ctx context.Context, arg CreateAdhesionParams) (*models.Adhesion, error)
 	GetMembersFromOrganization(ctx context.Context, organizationID uint64) ([]*models.OrganizationMember, error)
+	GetAdhesion(ctx context.Context, id uint64) (*models.Adhesion, error)
+	ApprovedAdhesion(ctx context.Context, id uint64) (*models.Adhesion, error)
+	// Invitation
+	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (*models.Invitation, error)
+	GetInvitation(ctx context.Context, link string) (*models.Invitation, error)
+	DesactivateInvitation(ctx context.Context, adhesionID uint64) error
+	DesactivateInvitationFromLink(ctx context.Context, link string) (*models.Invitation, error)
 }
 
 type QuerierTx interface {
@@ -43,6 +50,10 @@ type QuerierTx interface {
 	CreateOTPTx(ctx context.Context, arg CreateOTPParams) (*models.Otp, error)
 	// Organization
 	CreateOrganizationWithAdhesionTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
+	// Adhesion
+	CreateInvitationTx(ctx context.Context, arg CreateAdhesionInvitationParams) (*models.Organization, error)
+	// Invitation
+	ApprovedInvitationTx(ctx context.Context, link string) error
 }
 
 var _ Querier = (*Queries)(nil)
