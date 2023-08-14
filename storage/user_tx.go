@@ -26,11 +26,11 @@ func (store *SQLStorage) CreateUserWithMemberTx(ctx context.Context, arg CreateU
 		})
 
 		if err != nil {
-			return err
+			return fmt.Errorf("error when creating an user %s: %w", arg.Phone, err)
 		}
 
 		err = q.UpdateMemberUserID(ctx, UpdateMemberUserIDParams{UserID: user.ID, MemberID: user.MemberID})
-		return err
+		return fmt.Errorf("error when updating member[%d] user[%d]: %w", user.MemberID, user.ID)
 	})
 
 	return 1, err

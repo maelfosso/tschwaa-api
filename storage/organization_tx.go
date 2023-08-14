@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"tschwaa.com/api/models"
@@ -13,7 +14,7 @@ func (store *SQLStorage) CreateOrganizationWithAdhesionTx(ctx context.Context, a
 	err := store.execTx(ctx, func(q *Queries) error {
 		org, err := q.CreateOrganization(ctx, arg)
 		if err != nil {
-			return err
+			return fmt.Errorf("error when creating organizatioin %s: %s", arg.Name, err)
 		}
 
 		_, err = q.CreateAdhesion(ctx, CreateAdhesionParams{
@@ -22,7 +23,7 @@ func (store *SQLStorage) CreateOrganizationWithAdhesionTx(ctx context.Context, a
 			Joined:         true,
 			JoinedAt:       time.Now(),
 		})
-		return err
+		return fmt.Errorf("error when creating adhesion of member[%d] into organization[%d]: %w", *arg.CreatedBy, org.ID, err)
 	})
 
 	return &org, err
