@@ -24,3 +24,9 @@ go.work
 .vscode
 
 build/
+
+# Env
+.env
+
+# Sqlc
+storage/sqlc/db/
