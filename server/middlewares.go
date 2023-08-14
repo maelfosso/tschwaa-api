@@ -45,7 +45,7 @@ func (s *Server) convertJwtTokenToMember(next http.Handler) http.Handler {
 		data := claims.(map[string]interface{})
 		email := data["Email"].(string)
 
-		user, err := s.database.GetMemberByEmail(ctx, email)
+		user, err := s.database.Storage.GetMemberByEmail(ctx, email)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return

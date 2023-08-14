@@ -184,12 +184,12 @@ type authMobile interface {
 }
 
 type GetOtpRequest struct {
-	PhoneNumber string `json:"phone_number,omitempty"`
+	PhoneNumber string `json:"phone,omitempty"`
 	Language    string `json:"language,omitempty"`
 }
 
 type CheckOtpRequest struct {
-	PhoneNumber string `json:"phone_number,omitempty"`
+	PhoneNumber string `json:"phone,omitempty"`
 	Language    string `json:"language,omitempty"`
 	PinCode     string `json:"pin_code,omitempty"`
 }

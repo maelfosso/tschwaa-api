@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -80,7 +80,7 @@ func (d *Database) dsn() string {
 
 // Connect to the database
 func (d *Database) Connect() error {
-	d.log.Info("Connecting to database", zap.String("url", d.createDataSourceName(true)))
+	d.log.Info("Connecting to database", zap.String("url", d.dsn()))
 
 	var err error
 	d.db, err = sql.Open("postgres", d.dsn())

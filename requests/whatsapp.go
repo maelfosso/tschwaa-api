@@ -83,21 +83,17 @@ var jsonForSendMessageTemplateText = `{
 		"language": {
 			"code": "%s"
 		},
-		"components": [
-			{
-				"type": "body",
-				"parameters": %s
-			}
-		]
+		"components": %s
 	}
 }`
 
-func SendMessageTextFromTemplate(to, template, language, parameters string) (*WhatsappSendMessageResponse, error) {
+func SendMessageTextFromTemplate(to, template, language, components string) (*WhatsappSendMessageResponse, error) {
 	jsonBody := []byte(
 		fmt.Sprintf(
-			jsonForSendMessageTemplateText, to, template, language, parameters,
+			jsonForSendMessageTemplateText, to, template, language, components,
 		),
 	)
+	log.Println("Template : ", string(jsonBody))
 	bodyReader := bytes.NewReader(jsonBody)
 
 	requestUrl := getWhatsappRequestURL("https://graph.facebook.com/%s/%s/messages")
@@ -140,12 +136,30 @@ func SendMessageTextFromTemplate(to, template, language, parameters string) (*Wh
 }
 
 func SendTschwaaOtp(to, language, pinCode string) (*WhatsappSendMessageResponse, error) {
-	parameters := fmt.Sprintf(`[
-		{
-			"type": "text",
-			"text": "%s"
-		}
-	]`, pinCode)
+	parameters := fmt.Sprintf(`
+		[
+			{
+				"type": "body",
+				"parameters": [
+						{
+								"type": "text",
+								"text": "%s"
+						}
+				]
+			},
+			{
+				"type": "button",
+				"sub_type": "url",
+				"index": 0,
+				"parameters": [
+						{
+						"type": "text",
+						"text": "%s"
+						}
+				]
+			}
+		]
+	`, pinCode, pinCode)
 	template := "tschwaa_otp"
 
 	return SendMessageTextFromTemplate(to, template, language, parameters)
@@ -167,20 +181,25 @@ func SendInvitationToJoinOrganization(member models.Member, organizationName, jo
 	template := "tschwaa_invite_member_to_join"
 	parameters := fmt.Sprintf(`[
 		{
-			"type": "text",
-			"text": "%s"
-		},
-		{
-			"type": "text",
-			"text": "%s"
-		},
-		{
-			"type": "text",
-			"text": "%s"
-		},
-		{
-			"type": "text",
-			"text": "%s"
+			"type": "body",
+			"parameters": [
+				{
+					"type": "text",
+					"text": "%s"
+				},
+				{
+					"type": "text",
+					"text": "%s"
+				},
+				{
+					"type": "text",
+					"text": "%s"
+				},
+				{
+					"type": "text",
+					"text": "%s"
+				}
+			]
 		}
 	]`, getMemberName(member, language), organizationName, linkToJoin, organizationReps)
 	return SendMessageTextFromTemplate(member.Phone, template, language, parameters)
