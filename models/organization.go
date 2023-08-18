@@ -29,14 +29,15 @@ type OrganizationMember struct {
 	FirstName string `json:"first_name,omitempty"`
 	LastName  string `json:"last_name,omitempty"`
 	Sex       string `json:"sex,omitempty"`
+	Email     string `json:"email,omitempty"`
 	Phone     string `json:"phone,omitempty"`
 
 	Position string `json:"position,omitempty"`
 	Role     string `json:"role,omitempty"`
 	Status   string `json:"status,omitempty"`
 
-	Joined   bool      `json:"joined,omitempty"`
-	JoinedAt time.Time `json:"joined_at,omitempty"`
+	Joined   bool       `json:"joined,omitempty"`
+	JoinedAt *time.Time `json:"joined_at,omitempty"`
 }
 
 type Adhesion struct {

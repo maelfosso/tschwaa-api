@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"tschwaa.com/api/models"
@@ -69,7 +70,7 @@ func (q *Queries) ApprovedAdhesion(ctx context.Context, id uint64) (*models.Adhe
 }
 
 const getMembersFromOrganization = `-- name: GetMembersFromOrganization :many
-SELECT m.id, m.first_name, m.last_name, m.sex, m.phone, a.position, a.role, a.status, a.joined, a.joined_at
+SELECT m.id, m.first_name, m.last_name, m.sex, m.email, m.phone, a.position, a.role, a.status, a.joined, a.joined_at
 FROM adhesions a INNER JOIN members m on a.member_id = m.id
 WHERE a.organization_id = $1
 `
@@ -88,6 +89,7 @@ func (q *Queries) GetMembersFromOrganization(ctx context.Context, organizationID
 			&i.FirstName,
 			&i.LastName,
 			&i.Sex,
+			&i.Email,
 			&i.Phone,
 			&i.Position,
 			&i.Role,
@@ -97,6 +99,8 @@ func (q *Queries) GetMembersFromOrganization(ctx context.Context, organizationID
 		); err != nil {
 			return nil, err
 		}
+
+		log.Println("row i:  ", i)
 		items = append(items, &i)
 	}
 	if err := rows.Close(); err != nil {
