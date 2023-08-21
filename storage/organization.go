@@ -55,7 +55,7 @@ func (q *Queries) GetOrganization(ctx context.Context, id uint64) (*models.Organ
 
 const listOrganizationOfMember = `-- name: ListOrganizationOfMember :many
 SELECT o.id, o.name, o.created_by, o.created_at, o.updated_at, o.description
-FROM organizations O INNER JOIN adhesions A ON O.id = A.organization_id
+FROM organizations O INNER JOIN memberships A ON O.id = A.organization_id
 WHERE A.member_id = $1
 `
 

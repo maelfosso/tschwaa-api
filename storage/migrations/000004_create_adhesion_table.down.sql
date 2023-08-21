@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS adhesions;
+DROP TABLE IF EXISTS memberships;

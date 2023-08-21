@@ -40,7 +40,7 @@ type OrganizationMember struct {
 	JoinedAt *time.Time `json:"joined_at,omitempty"`
 }
 
-type Adhesion struct {
+type Membership struct {
 	ID             uint64 `json:"id,omitempty"`
 	MemberID       uint64 `json:"member_id,omitempty"`
 	OrganizationID uint64 `json:"org_id,omitempty"`
@@ -63,8 +63,8 @@ type Invitation struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 
-	AdhesionID   uint64
-	Adhesion     Adhesion     `json:"adhesion,omitempty"`
+	MembershipID uint64
+	Membership   Membership   `json:"membership,omitempty"`
 	Member       Member       `json:"member,omitempty"`
 	Organization Organization `json:"organization,omitempty"`
 }

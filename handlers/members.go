@@ -26,8 +26,8 @@ type inviteMembersIntoOrganization interface {
 	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
 	GetMemberByPhone(ctx context.Context, phone string) (*models.Member, error)
 	CreateMember(ctx context.Context, arg storage.CreateMemberParams) (*models.Member, error)
-	CreateAdhesion(ctx context.Context, arg storage.CreateAdhesionParams) (*models.Adhesion, error)
-	CreateInvitationTx(ctx context.Context, arg storage.CreateAdhesionInvitationParams) (*models.Organization, error)
+	CreateMembership(ctx context.Context, arg storage.CreateMembershipParams) (*models.Membership, error)
+	CreateInvitationTx(ctx context.Context, arg storage.CreateMembershipInvitationParams) (*models.Organization, error)
 }
 
 func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
@@ -154,7 +154,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					return
 				}
 
-				_, err = o.CreateInvitationTx(r.Context(), storage.CreateAdhesionInvitationParams{
+				_, err = o.CreateInvitationTx(r.Context(), storage.CreateMembershipInvitationParams{
 					MemberID:       member.ID,
 					OrganizationID: org.ID,
 					Joined:         false,

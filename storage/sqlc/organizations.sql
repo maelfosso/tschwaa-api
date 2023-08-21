@@ -14,7 +14,7 @@ WHERE created_by = $1;
 
 -- name: ListOrganizationOfMember :many
 SELECT O.*
-FROM organizations O INNER JOIN adhesions A ON O.id = A.organization_id
+FROM organizations O INNER JOIN memberships A ON O.id = A.organization_id
 WHERE A.member_id = $1;
 
 -- name: GetOrganization :one

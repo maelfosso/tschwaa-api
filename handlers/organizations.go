@@ -15,7 +15,7 @@ import (
 )
 
 type createOrg interface {
-	CreateOrganizationWithAdhesionTx(ctx context.Context, arg storage.CreateOrganizationParams) (*models.Organization, error)
+	CreateOrganizationWithMembershipTx(ctx context.Context, arg storage.CreateOrganizationParams) (*models.Organization, error)
 }
 
 type listOrg interface {
@@ -43,7 +43,7 @@ func CreateOrganization(mux chi.Router, o createOrg) {
 
 		currentMember := GetCurrentMember(r)
 
-		org, err := o.CreateOrganizationWithAdhesionTx(r.Context(), storage.CreateOrganizationParams{
+		org, err := o.CreateOrganizationWithMembershipTx(r.Context(), storage.CreateOrganizationParams{
 			Name:        inputs.Name,
 			Description: &inputs.Description,
 			CreatedBy:   &currentMember.ID,

@@ -30,15 +30,15 @@ type Querier interface {
 	ListOrganizationOfMember(ctx context.Context, memberID uint64) ([]*models.Organization, error)
 	ListOrganizations(ctx context.Context) ([]*models.Organization, error)
 	ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error)
-	// Adhesion
-	CreateAdhesion(ctx context.Context, arg CreateAdhesionParams) (*models.Adhesion, error)
+	// Membership
+	CreateMembership(ctx context.Context, arg CreateMembershipParams) (*models.Membership, error)
 	GetMembersFromOrganization(ctx context.Context, organizationID uint64) ([]*models.OrganizationMember, error)
-	GetAdhesion(ctx context.Context, id uint64) (*models.Adhesion, error)
-	ApprovedAdhesion(ctx context.Context, id uint64) (*models.Adhesion, error)
+	GetMembership(ctx context.Context, id uint64) (*models.Membership, error)
+	ApprovedMembership(ctx context.Context, id uint64) (*models.Membership, error)
 	// Invitation
 	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (*models.Invitation, error)
 	GetInvitation(ctx context.Context, link string) (*models.Invitation, error)
-	DesactivateInvitation(ctx context.Context, adhesionID uint64) error
+	DesactivateInvitation(ctx context.Context, membershipID uint64) error
 	DesactivateInvitationFromLink(ctx context.Context, link string) (*models.Invitation, error)
 }
 
@@ -49,9 +49,9 @@ type QuerierTx interface {
 	// Otp
 	CreateOTPTx(ctx context.Context, arg CreateOTPParams) (*models.Otp, error)
 	// Organization
-	CreateOrganizationWithAdhesionTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
-	// Adhesion
-	CreateInvitationTx(ctx context.Context, arg CreateAdhesionInvitationParams) (*models.Organization, error)
+	CreateOrganizationWithMembershipTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
+	// Membership
+	CreateInvitationTx(ctx context.Context, arg CreateMembershipInvitationParams) (*models.Organization, error)
 	// Invitation
 	ApprovedInvitationTx(ctx context.Context, link string) error
 }

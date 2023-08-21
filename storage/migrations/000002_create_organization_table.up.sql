@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS organizations (
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
   PRIMARY KEY (id),
-  CONSTRAINT fk_adhesions_members_created_by
+  CONSTRAINT fk_memberships_members_created_by
     FOREIGN KEY (created_by) REFERENCES members(id)
     ON DELETE SET NULL
     ON UPDATE CASCADE

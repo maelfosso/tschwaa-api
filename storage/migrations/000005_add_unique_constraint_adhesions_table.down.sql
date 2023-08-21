@@ -1,1 +1,1 @@
-ALTER TABLE adhesions DROP CONSTRAINT ak_adhesions_member_id_organization_id;
+ALTER TABLE memberships DROP CONSTRAINT ak_memberships_member_id_organization_id;

@@ -41,7 +41,7 @@ type JoinOrganizationResults struct {
 	Active       bool                `json:"active,omitempty"`
 	Link         string              `json:"link,omitempty"`
 	CreatedAt    time.Time           `json:"created_at,omitempty"`
-	Adhesion     *models.Adhesion    `json:"adhesion,omitempty"`
+	Membership   *models.Membership  `json:"membership,omitempty"`
 	Member       models.Member       `json:"member,omitempty"`
 	Organization models.Organization `json:"organization,omitempty"`
 }
@@ -102,7 +102,7 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 		result.Member = invitation.Member
 		result.Organization = invitation.Organization
 		if invitation.Member.UserID > 0 {
-			result.Adhesion = nil
+			result.Membership = nil
 
 			if currentUser != nil {
 				// Return member info: S601
@@ -129,7 +129,7 @@ func GetInvitation(mux chi.Router, d getInvitation) {
 				return
 			}
 		} else {
-			// result.Adhesion = &invitation.Adhesion
+			// result.Membership = &invitation.Membership
 			result.CreatedAt = invitation.CreatedAt
 			result.Active = invitation.Active
 			result.Code = ""
