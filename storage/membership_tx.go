@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"tschwaa.com/api/models"
+	"tschwaa.com/api/utils"
 )
 
 type CreateMembershipInvitationParams struct {
@@ -26,19 +27,31 @@ func (store *SQLStorage) CreateInvitationTx(ctx context.Context, arg CreateMembe
 			JoinedAt:       time.Now(),
 		})
 		if err != nil {
-			return fmt.Errorf("error when creating membership of member[%d] into organization[%d]: %w", arg.MemberID, arg.OrganizationID, err)
+			return utils.Fail(
+				fmt.Sprintf("error when creating membership of member[%d] into organization[%d]", arg.MemberID, arg.OrganizationID),
+				"ERR_CRT_INV_01",
+				err,
+			)
 		}
 
 		err = q.DesactivateInvitation(ctx, membership.ID)
 		if err != nil {
-			return fmt.Errorf("error when desactivating invitation from membership[%d]: %w", membership.ID, err)
+			return utils.Fail(
+				fmt.Sprintf("error when desactivating invitation from membership[%d]", membership.ID),
+				"ERR_CRT_INV_02",
+				err,
+			)
 		}
 
 		_, err = q.CreateInvitation(ctx, CreateInvitationParams{
 			Link:         arg.JoinId,
 			MembershipID: membership.ID,
 		})
-		return fmt.Errorf("error when creating invitation %s of %d: %w", arg.JoinId, membership.ID, err)
+		return utils.Fail(
+			fmt.Sprintf("error when creating invitation %s of %d", arg.JoinId, membership.ID),
+			"ERR_CRT_INV_03",
+			err,
+		)
 	})
 
 	return &org, err
@@ -49,11 +62,15 @@ func (store *SQLStorage) ApprovedInvitationTx(ctx context.Context, link string) 
 
 		invitation, err := q.DesactivateInvitationFromLink(ctx, link)
 		if err != nil {
-			return fmt.Errorf("error when desactivating invitation from link %s: %w", link, err)
+			return utils.Fail(
+				fmt.Sprintf("error when desactivating invitation from link %s", link),
+				"ERR_APR_ORG_INV_01", err)
 		}
 
 		_, err = q.ApprovedMembership(ctx, invitation.MembershipID)
-		return fmt.Errorf("error when approving membership %d: %w", invitation.MembershipID, err)
+		return utils.Fail(
+			fmt.Sprintf("error when approving membership %d", invitation.MembershipID),
+			"ERR_APR_ORG_INV_02", err)
 	})
 
 	return err

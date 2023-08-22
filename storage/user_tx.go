@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"tschwaa.com/api/helpers"
+	"tschwaa.com/api/utils"
 )
 
 type CreateUserWithMemberParams struct {
@@ -26,11 +27,15 @@ func (store *SQLStorage) CreateUserWithMemberTx(ctx context.Context, arg CreateU
 		})
 
 		if err != nil {
-			return fmt.Errorf("error when creating an user %s: %w", arg.Phone, err)
+			return utils.Fail(
+				fmt.Sprintf("error when creating an user %s", arg.Phone),
+				"ERR_CRT_USR_MBR_01", err)
 		}
 
 		err = q.UpdateMemberUserID(ctx, UpdateMemberUserIDParams{UserID: user.ID, MemberID: user.MemberID})
-		return fmt.Errorf("error when updating member[%d] user[%d]: %w", user.MemberID, user.ID)
+		return utils.Fail(
+			fmt.Sprintf("error when updating member[%d] user[%d]", user.MemberID, user.ID),
+			"ERR_CRT_USR_MBR_01", err)
 	})
 
 	return 1, err
@@ -56,19 +61,25 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		})
 
 		if err != nil {
-			return fmt.Errorf("error when creating the member: %w", err)
+			return utils.Fail(
+				"error when creating the member",
+				"ERR_CRT_MBR_USR_01", err)
 		}
 
 		// Hash the password
 		hashedPassword := helpers.HashPassword(arg.Password)
 		if hashedPassword != "" {
-			return fmt.Errorf("error when hashing the password: %w", err.Error())
+			return utils.Fail(
+				"error when hashing the password",
+				"ERR_CRT_MBR_USR_02", err)
 		}
 
 		// Get the token - Next will have token for email and token for sms
 		token, err := helpers.CreateSecret()
 		if err != nil {
-			return fmt.Errorf("Error createSecret: %w", err)
+			return utils.Fail(
+				"error createSecret",
+				"ERR_CRT_MBR_USR_03", err)
 		}
 
 		user, err := q.CreateUser(ctx, CreateUserParams{
@@ -80,11 +91,15 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		})
 
 		if err != nil {
-			return err
+			return utils.Fail(
+				"error creating the user",
+				"ERR_CRT_MBR_USR_04", err)
 		}
 
 		err = q.UpdateMemberUserID(ctx, UpdateMemberUserIDParams{UserID: user.ID, MemberID: user.MemberID})
-		return err
+		return utils.Fail(
+			fmt.Sprintf("error updating the member[%d] with user[%d]", user.MemberID, user.ID),
+			"ERR_CRT_MBR_USR_03", err)
 	})
 
 	return err
