@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"tschwaa.com/api/models"
+	"tschwaa.com/api/utils"
 )
 
 func getWhatsappRequestURL(url string) string {
@@ -87,7 +88,7 @@ var jsonForSendMessageTemplateText = `{
 	}
 }`
 
-func SendMessageTextFromTemplate(to, template, language, components string) (*WhatsappSendMessageResponse, error) {
+func sendMessageTextFromTemplate(to, template, language, components string) (*WhatsappSendMessageResponse, error) {
 	jsonBody := []byte(
 		fmt.Sprintf(
 			jsonForSendMessageTemplateText, to, template, language, components,
@@ -105,7 +106,7 @@ func SendMessageTextFromTemplate(to, template, language, components string) (*Wh
 		bodyReader,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("client: could not create request: %w", err)
+		return nil, utils.Fail("client: could not create request", "ERR_SMSG_TPL_01", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -121,7 +122,7 @@ func SendMessageTextFromTemplate(to, template, language, components string) (*Wh
 
 	resBody, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("client: could not read response body: %w", err)
+		return nil, utils.Fail("client: could not read response body", "ERR_SMSG_TPL_02", err)
 	}
 
 	log.Println("client: response body: %s", string(resBody))
@@ -129,7 +130,7 @@ func SendMessageTextFromTemplate(to, template, language, components string) (*Wh
 	var data WhatsappSendMessageResponse
 	err = json.Unmarshal(resBody, &data)
 	if err != nil {
-		return nil, fmt.Errorf("error when unmarshelling response body: %w", err)
+		return nil, utils.Fail("error when unmarshelling response body", "ERR_SMSG_TPL_03", err)
 	}
 
 	return &data, nil
@@ -162,7 +163,7 @@ func SendTschwaaOtp(to, language, pinCode string) (*WhatsappSendMessageResponse,
 	`, pinCode, pinCode)
 	template := "tschwaa_otp"
 
-	return SendMessageTextFromTemplate(to, template, language, parameters)
+	return sendMessageTextFromTemplate(to, template, language, parameters)
 }
 
 func getMemberName(member models.Member, language string) string {
@@ -202,5 +203,5 @@ func SendInvitationToJoinOrganization(member models.Member, organizationName, jo
 			]
 		}
 	]`, getMemberName(member, language), organizationName, linkToJoin, organizationReps)
-	return SendMessageTextFromTemplate(member.Phone, template, language, parameters)
+	return sendMessageTextFromTemplate(member.Phone, template, language, parameters)
 }

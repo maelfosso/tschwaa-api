@@ -26,6 +26,7 @@ type inviteMembersIntoOrganization interface {
 	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
 	GetMemberByPhone(ctx context.Context, phone string) (*models.Member, error)
 	CreateMember(ctx context.Context, arg storage.CreateMemberParams) (*models.Member, error)
+	DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
 	CreateMembership(ctx context.Context, arg storage.CreateMembershipParams) (*models.Membership, error)
 	CreateInvitationTx(ctx context.Context, arg storage.CreateMembershipInvitationParams) (*models.Organization, error)
 }
@@ -108,7 +109,6 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 
 				// If member doesn't exist, create it
 				if existingMember == nil {
-					log.Println("error when creating a member", err)
 					createdMember, err := o.CreateMember(r.Context(), storage.CreateMemberParams{
 						FirstName: member.FirstName,
 						LastName:  member.LastName,
@@ -117,7 +117,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 						Sex:       member.Sex,
 					})
 					if err != nil {
-						log.Println("error when creating a member", err)
+						log.Println("error when creating member", err)
 						channel <- invitationSentResponse{
 							PhoneNumber: member.Phone,
 							Invited:     false,
@@ -149,9 +149,30 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     false,
-						Error:       "ERR_IMIO_512",
+						Error:       err.Error(),
 					}
 					return
+				}
+				membership, err := o.DoesMembershipExist(r.Context(), storage.DoesMembershipExistParams{
+					MemberID:       member.ID,
+					OrganizationID: org.ID,
+				})
+				if err != nil {
+					log.Printf("error when checking if member[%d] has already joined organization[%d]: %s", member.ID, org.ID, err)
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       "ERR_IMIO_515",
+					}
+					return
+				}
+				if membership != nil {
+					log.Printf("member[%d] already in organization[%d]", member.ID, org.ID)
+					channel <- invitationSentResponse{
+						PhoneNumber: member.Phone,
+						Invited:     false,
+						Error:       "ERR_IMIO_516",
+					}
 				}
 
 				_, err = o.CreateInvitationTx(r.Context(), storage.CreateMembershipInvitationParams{
@@ -161,7 +182,7 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					JoinId:         joinId,
 				})
 				if err != nil {
-					log.Println("error when creating an invitation", err)
+					log.Printf("error when invitating member[%d] to join organization[%d]: %s", member.ID, org.ID, err)
 					channel <- invitationSentResponse{
 						PhoneNumber: member.Phone,
 						Invited:     true,
@@ -189,19 +210,12 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 			close(responseChannel)
 		}()
 
-		// wg.Wait()
-		// close(responseChannel)
 		responses := []invitationSentResponse{}
 		for val := range responseChannel {
 			log.Println("Channel : ", val)
 			responses = append(responses, val)
 		}
-		// wg.Wait()
-		// close(responseChannel)
 
-		// log.Println("\n\n**** ALL MEMBERS PROCESSED")
-
-		// log.Println("invitation send response : ", responses)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(responses); err != nil {
