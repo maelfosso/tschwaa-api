@@ -8,6 +8,35 @@ import (
 	"tschwaa.com/api/models"
 )
 
+const doesMembershipExist = `-- name: DoesMembershipExist :one
+SELECT id, member_id, organization_id, created_at, updated_at, joined, joined_at, position, status, role
+FROM memberships
+WHERE member_id = $1 AND organization_id = $2
+`
+
+type DoesMembershipExistParams struct {
+	MemberID       uint64 `db:"member_id" json:"member_id"`
+	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
+}
+
+func (q *Queries) DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error) {
+	row := q.db.QueryRowContext(ctx, doesMembershipExist, arg.MemberID, arg.OrganizationID)
+	var i models.Membership
+	err := row.Scan(
+		&i.ID,
+		&i.MemberID,
+		&i.OrganizationID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Joined,
+		&i.JoinedAt,
+		&i.Position,
+		&i.Status,
+		&i.Role,
+	)
+	return &i, err
+}
+
 const createMembership = `-- name: CreateMembership :one
 INSERT INTO memberships(member_id, organization_id, joined, joined_at)
 VALUES ($1, $2, $3, $4)

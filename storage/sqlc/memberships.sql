@@ -1,3 +1,8 @@
+-- name: DoesMembershipExist :one
+SELECT *
+FROM memberships
+WHERE member_id = $1 AND organization_id = $2;
+
 -- name: CreateMembership :one
 INSERT INTO memberships(member_id, organization_id, joined, joined_at)
 VALUES ($1, $2, $3, $4)
