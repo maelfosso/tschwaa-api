@@ -68,7 +68,7 @@ type CreateUserParams struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*models.User, error) {
-	var user *models.User
+	var user models.User
 
 	err := q.db.QueryRowContext(
 		ctx, createUser,
@@ -81,7 +81,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*models
 		&user.Token,
 		&user.MemberID,
 	)
-	return user, err
+	return &user, err
 }
 
 const getMemberByPhoneNumber = `
@@ -148,8 +148,7 @@ type CreateMemberParams struct {
 }
 
 func (q *Queries) CreateMember(ctx context.Context, arg CreateMemberParams) (*models.Member, error) {
-	var member *models.Member
-
+	var member models.Member
 	err := q.db.QueryRowContext(
 		ctx,
 		createMember,
@@ -163,7 +162,7 @@ func (q *Queries) CreateMember(ctx context.Context, arg CreateMemberParams) (*mo
 		&member.Phone,
 	)
 
-	return member, err
+	return &member, err
 }
 
 const updateMember = `
