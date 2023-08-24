@@ -7,17 +7,14 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func HashPassword(password string) string {
+func HashPassword(password string) (string, error) {
 	var passwordBytes = []byte(password)
 
 	// Hash password with Bcrypt MinCost
 	hashedPassword, err := bcrypt.GenerateFromPassword(passwordBytes, bcrypt.MinCost)
-	if err != nil {
-		return ""
-	}
 
 	// Cast the hashedPassword to string
-	return string(hashedPassword)
+	return string(hashedPassword), err
 }
 
 func CreateSecret() (string, error) {

@@ -67,8 +67,8 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		}
 
 		// Hash the password
-		hashedPassword := helpers.HashPassword(arg.Password)
-		if hashedPassword != "" {
+		hashedPassword, err := helpers.HashPassword(arg.Password)
+		if hashedPassword == "" || err != nil {
 			return utils.Fail(
 				"error when hashing the password",
 				"ERR_CRT_MBR_USR_02", err)
