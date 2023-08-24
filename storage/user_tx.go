@@ -99,7 +99,7 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		err = q.UpdateMemberUserID(ctx, UpdateMemberUserIDParams{UserID: user.ID, MemberID: user.MemberID})
 		return utils.Fail(
 			fmt.Sprintf("error updating the member[%d] with user[%d]", user.MemberID, user.ID),
-			"ERR_CRT_MBR_USR_03", err)
+			"ERR_CRT_MBR_USR_05", err)
 	})
 
 	return err
