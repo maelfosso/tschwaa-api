@@ -27,7 +27,10 @@ migrate-create:
 	migrate create -ext sql -dir storage/migrations -seq $(filter-out $@,$(MAKECMDGOALS))
 
 migrate-up:
-	migrate -database ${POSTGRESQL_URL} -path storage/migrations up $(filter-out $@,$(MAKECMDGOALS))
+	migrate -database ${POSTGRESQL_URL} -path storage/migrations -verbose up $(filter-out $@,$(MAKECMDGOALS))
 
 migrate-down:
-	migrate -database ${POSTGRESQL_URL} -path storage/migrations down $(filter-out $@,$(MAKECMDGOALS))
+	migrate -database ${POSTGRESQL_URL} -path storage/migrations -verbose down $(filter-out $@,$(MAKECMDGOALS))
+
+migrate-fix:
+	migrate -database ${POSTGRESQL_URL} -path storage/migrations force $(filter-out $@,$(MAKECMDGOALS))
