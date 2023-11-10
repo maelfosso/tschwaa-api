@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"time"
 
@@ -34,6 +35,10 @@ func (q *Queries) DoesMembershipExist(ctx context.Context, arg DoesMembershipExi
 		&i.Status,
 		&i.Role,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return &i, nil
+	}
 	return &i, err
 }
 
