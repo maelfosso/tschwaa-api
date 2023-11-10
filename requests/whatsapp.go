@@ -94,7 +94,6 @@ func sendMessageTextFromTemplate(to, template, language, components string) (*Wh
 			jsonForSendMessageTemplateText, to, template, language, components,
 		),
 	)
-	log.Println("Template : ", string(jsonBody))
 	bodyReader := bytes.NewReader(jsonBody)
 
 	requestUrl := getWhatsappRequestURL("https://graph.facebook.com/%s/%s/messages")

@@ -37,7 +37,7 @@ func (q *Queries) DoesMembershipExist(ctx context.Context, arg DoesMembershipExi
 	)
 
 	if err != nil && err == sql.ErrNoRows {
-		return &i, nil
+		return nil, nil
 	}
 	return &i, err
 }

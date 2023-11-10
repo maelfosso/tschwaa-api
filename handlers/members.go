@@ -55,9 +55,9 @@ func GetOrganizationMembers(mux chi.Router, o getOrgMembers) {
 }
 
 type invitationSentResponse struct {
-	PhoneNumber string `json:"phone_number,omitempty"`
-	Invited     bool   `json:"invited,omitempty"`
-	Error       string `json:"error,omitempty"`
+	Phone   string `json:"phone,omitempty"`
+	Invited bool   `json:"invited,omitempty"`
+	Error   string `json:"error,omitempty"`
 }
 
 func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganization) {
@@ -100,9 +100,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 				if err != nil {
 					log.Println("error when checking if member with phone number already exists", err)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       "ERR_IMIO_510",
+						Phone:   member.Phone,
+						Invited: false,
+						Error:   "ERR_IMIO_510",
 					}
 					return
 				}
@@ -119,9 +119,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					if err != nil {
 						log.Println("error when creating member", err)
 						channel <- invitationSentResponse{
-							PhoneNumber: member.Phone,
-							Invited:     false,
-							Error:       "ERR_IMIO_511",
+							Phone:   member.Phone,
+							Invited: false,
+							Error:   "ERR_IMIO_511",
 						}
 						return
 					}
@@ -147,9 +147,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 				if err != nil {
 					log.Println("error when sending a whatsapp invitation to a member", err)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       err.Error(),
+						Phone:   member.Phone,
+						Invited: false,
+						Error:   err.Error(),
 					}
 					return
 				}
@@ -157,22 +157,24 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 					MemberID:       member.ID,
 					OrganizationID: org.ID,
 				})
+				log.Println("Membership?? ", membership, err)
 				if err != nil {
 					log.Printf("error when checking if member[%d] has already joined organization[%d]: %s", member.ID, org.ID, err)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       "ERR_IMIO_515",
+						Phone:   member.Phone,
+						Invited: false,
+						Error:   "ERR_IMIO_515",
 					}
 					return
 				}
 				if membership != nil {
 					log.Printf("member[%d] already in organization[%d]", member.ID, org.ID)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     false,
-						Error:       "ERR_IMIO_516",
+						Phone:   member.Phone,
+						Invited: false,
+						Error:   "ERR_IMIO_516",
 					}
+					return
 				}
 
 				_, err = o.CreateInvitationTx(r.Context(), storage.CreateMembershipInvitationParams{
@@ -184,9 +186,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 				if err != nil {
 					log.Printf("error when invitating member[%d] to join organization[%d]: %s", member.ID, org.ID, err)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     true,
-						Error:       "ERR_IMIO_514",
+						Phone:   member.Phone,
+						Invited: true,
+						Error:   "ERR_IMIO_514",
 					}
 					return
 				}
@@ -194,9 +196,9 @@ func InviteMembersIntoOrganization(mux chi.Router, o inviteMembersIntoOrganizati
 				if len(result.Messages) >= 1 {
 					log.Println("invitation successfully sent to member", member.Phone)
 					channel <- invitationSentResponse{
-						PhoneNumber: member.Phone,
-						Invited:     true,
-						Error:       "",
+						Phone:   member.Phone,
+						Invited: true,
+						Error:   "",
 					}
 					return
 				}

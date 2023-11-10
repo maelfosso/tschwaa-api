@@ -184,14 +184,14 @@ type authMobile interface {
 }
 
 type GetOtpRequest struct {
-	PhoneNumber string `json:"phone,omitempty"`
-	Language    string `json:"language,omitempty"`
+	Phone    string `json:"phone,omitempty"`
+	Language string `json:"language,omitempty"`
 }
 
 type CheckOtpRequest struct {
-	PhoneNumber string `json:"phone,omitempty"`
-	Language    string `json:"language,omitempty"`
-	PinCode     string `json:"pin_code,omitempty"`
+	Phone    string `json:"phone,omitempty"`
+	Language string `json:"language,omitempty"`
+	PinCode  string `json:"pin_code,omitempty"`
 }
 
 func GetOtp(mux chi.Router, a authMobile) {
@@ -212,14 +212,14 @@ func GetOtp(mux chi.Router, a authMobile) {
 		// check if the user exists as a member (user can't exists its member)
 		// if the user doesn't exist then ask him to create an account using the web app
 		// or to be invited by the administrator of its organization
-		exists, err := a.DoesUserExist(ctx, input.PhoneNumber)
+		exists, err := a.DoesUserExist(ctx, input.Phone)
 		if err != nil {
 			log.Println("error when sending the Otp via WhatsApp: ", err)
 			http.Error(w, "ERR_COTP_150", http.StatusBadRequest)
 			return
 		}
 		if exists == false {
-			log.Println("no user with the phone number: ", input.PhoneNumber)
+			log.Println("no user with the phone number: ", input.Phone)
 			http.Error(w, "ERR_COTP_151", http.StatusBadRequest)
 			return
 		}
@@ -230,7 +230,7 @@ func GetOtp(mux chi.Router, a authMobile) {
 
 		// send the pin code to a the phone number using Whatsapp API
 		res, err := requests.SendTschwaaOtp(
-			input.PhoneNumber,
+			input.Phone,
 			input.Language,
 			pinCode,
 		)
@@ -242,7 +242,7 @@ func GetOtp(mux chi.Router, a authMobile) {
 
 		_, err = a.CreateOTPTx(r.Context(), storage.CreateOTPParams{
 			WaMessageID: res.Messages[0].ID,
-			Phone:       input.PhoneNumber,
+			Phone:       input.Phone,
 			PinCode:     pinCode,
 		})
 		if err != nil {
@@ -278,7 +278,7 @@ func CheckOtp(mux chi.Router, a authMobile) {
 
 		// check that the phone number is correct
 		otp, err := a.CheckOTP(ctx, storage.CheckOTPParams{
-			Phone:   input.PhoneNumber,
+			Phone:   input.Phone,
 			PinCode: input.PinCode,
 		})
 		if err != nil {
@@ -296,7 +296,7 @@ func CheckOtp(mux chi.Router, a authMobile) {
 		}
 
 		// Generating the JWT Token
-		member, err := a.GetMemberByPhone(ctx, input.PhoneNumber)
+		member, err := a.GetMemberByPhone(ctx, input.Phone)
 		if err != nil {
 			log.Println("error when looking for user: ", err)
 			http.Error(w, "ERR_COTP_104", http.StatusBadRequest)
@@ -345,7 +345,7 @@ func ResendOtp(mux chi.Router, m authMobile) {
 		// var m *models.Otp
 
 		// // check that the phone number is correct
-		// m, err = a.CheckOtp(r.Context(), input.PhoneNumber, input.PinCode)
+		// m, err = a.CheckOtp(r.Context(), input.Phone, input.PinCode)
 		// if err != nil {
 		// 	http.Error(w, err.Error(), http.StatusBadRequest)
 		// 	return

@@ -84,7 +84,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (*models
 	return &user, err
 }
 
-const getMemberByPhoneNumber = `
+const getMemberByPhone = `
 	SELECT id, first_name, last_name, sex, phone, email
 	FROM members
 	WHERE (phone = $1) OR (email = $2)
@@ -98,7 +98,7 @@ type GetMemberByUsernameParams struct {
 func (q *Queries) GetMemberByUsername(ctx context.Context, arg GetMemberByUsernameParams) (*models.Member, error) {
 	var user models.Member
 
-	if err := q.db.QueryRowContext(ctx, getMemberByPhoneNumber, arg.Phone, arg.Email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Sex, &user.Phone, &user.Email); err == nil {
+	if err := q.db.QueryRowContext(ctx, getMemberByPhone, arg.Phone, arg.Email).Scan(&user.ID, &user.FirstName, &user.LastName, &user.Sex, &user.Phone, &user.Email); err == nil {
 		return &user, nil
 	} else if err == sql.ErrNoRows {
 		return nil, nil
