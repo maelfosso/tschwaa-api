@@ -232,6 +232,19 @@ func (q *Queries) GetInvitation(ctx context.Context, link string) (*models.Invit
 	return &i, err
 }
 
+const getInvitationLinkFromMembership = `-- name: GetInvitationLinkFromMembership :one
+SELECT link
+FROM invitations
+WHERE membership_id = $1
+`
+
+func (q *Queries) GetInvitationLinkFromMembership(ctx context.Context, membershipID uint64) (string, error) {
+	row := q.db.QueryRowContext(ctx, getInvitationLinkFromMembership, membershipID)
+	var link string
+	err := row.Scan(&link)
+	return link, err
+}
+
 const desactivateInvitation = `-- name: DesactivateInvitation :exec
 UPDATE invitations
 SET active = FALSE

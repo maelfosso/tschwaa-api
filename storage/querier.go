@@ -39,6 +39,7 @@ type Querier interface {
 	// Invitation
 	CreateInvitation(ctx context.Context, arg CreateInvitationParams) (*models.Invitation, error)
 	GetInvitation(ctx context.Context, link string) (*models.Invitation, error)
+	GetInvitationLinkFromMembership(ctx context.Context, membershipId uint64) (string, error)
 	DesactivateInvitation(ctx context.Context, membershipID uint64) error
 	DesactivateInvitationFromLink(ctx context.Context, link string) (*models.Invitation, error)
 }

@@ -50,3 +50,8 @@ INNER JOIN memberships a ON i.membership_id = a.id
 INNER JOIN members m ON a.member_id = m.id
 INNER JOIN organizations o ON a.organization_id = o.id
 WHERE link = $1;
+
+-- name: GetInvitationLinkFromMembership :one
+SELECT link
+FROM invitations
+WHERE membership_id = $1;
