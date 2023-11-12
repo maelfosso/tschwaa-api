@@ -8,9 +8,9 @@ import (
 )
 
 const getCurrentSession = `-- name: GetCurrentSession :one
-SELECT id, start_date, end_date, organization_id, current, created_at, updated_at
+SELECT id, start_date, end_date, organization_id, in_progress, created_at, updated_at
 FROM sessions
-WHERE current = TRUE
+WHERE in_progress = TRUE
 `
 
 func (q *Queries) GetCurrentSession(ctx context.Context) (*models.Session, error) {
@@ -29,15 +29,15 @@ func (q *Queries) GetCurrentSession(ctx context.Context) (*models.Session, error
 }
 
 const createSession = `-- name: CreateSession :one
-INSERT INTO sessions(start_date, end_date, current, organization_id)
+INSERT INTO sessions(start_date, end_date, in_progress, organization_id)
 VALUES ($1, $2, $3, $4)
-RETURNING id, start_date, end_date, organization_id, current, created_at, updated_at
+RETURNING id, start_date, end_date, organization_id, in_progress, created_at, updated_at
 `
 
 type CreateSessionParams struct {
 	StartDate      time.Time `db:"start_date" json:"start_date"`
 	EndDate        time.Time `db:"end_date" json:"end_date"`
-	Current        bool      `db:"current" json:"current"`
+	InProgress     bool      `db:"in_progress" json:"in_progress"`
 	OrganizationID uint64    `db:"organization_id" json:"organization_id"`
 }
 
@@ -45,7 +45,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 	row := q.db.QueryRowContext(ctx, createSession,
 		arg.StartDate,
 		arg.EndDate,
-		arg.Current,
+		arg.InProgress,
 		arg.OrganizationID,
 	)
 	var i models.Session

@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS sessions (
   start_date TIMESTAMP NOT NULL,
   end_date TIMESTAMP NOT NULL,
   organization_id INTEGER NOT NULL,
-  current BOOLEAN DEFAULT FALSE,
+  in_progress BOOLEAN DEFAULT FALSE,
   
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
