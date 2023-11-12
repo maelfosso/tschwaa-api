@@ -28,6 +28,17 @@ func (q *Queries) GetCurrentSession(ctx context.Context) (*models.Session, error
 	return &i, err
 }
 
+const noSessionInProgress = `-- name: NoSessionInProgress :exec
+UPDATE sessions
+SET in_progress = FALSE
+WHERE organization_id = $1 AND in_progress = TRUE
+`
+
+func (q *Queries) NoSessionInProgress(ctx context.Context, organizationID int32) error {
+	_, err := q.db.ExecContext(ctx, noSessionInProgress, organizationID)
+	return err
+}
+
 const createSession = `-- name: CreateSession :one
 INSERT INTO sessions(start_date, end_date, in_progress, organization_id)
 VALUES ($1, $2, $3, $4)
