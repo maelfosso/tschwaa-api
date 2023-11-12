@@ -32,6 +32,7 @@ type Querier interface {
 	ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error)
 	// Session
 	GetCurrentSession(ctx context.Context) (*models.Session, error)
+	NoSessionInProgress(ctx context.Context, organizationID uint64) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
@@ -55,6 +56,8 @@ type QuerierTx interface {
 	CreateOTPTx(ctx context.Context, arg CreateOTPParams) (*models.Otp, error)
 	// Organization
 	CreateOrganizationWithMembershipTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
+	// Session
+	CreateSessionTx(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Membership
 	CreateInvitationTx(ctx context.Context, arg CreateMembershipInvitationParams) (*models.Organization, error)
 	// Invitation

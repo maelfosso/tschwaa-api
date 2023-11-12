@@ -34,7 +34,7 @@ SET in_progress = FALSE
 WHERE organization_id = $1 AND in_progress = TRUE
 `
 
-func (q *Queries) NoSessionInProgress(ctx context.Context, organizationID int32) error {
+func (q *Queries) NoSessionInProgress(ctx context.Context, organizationID uint64) error {
 	_, err := q.db.ExecContext(ctx, noSessionInProgress, organizationID)
 	return err
 }
