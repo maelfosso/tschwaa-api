@@ -30,6 +30,9 @@ type Querier interface {
 	ListOrganizationOfMember(ctx context.Context, memberID uint64) ([]*models.Organization, error)
 	ListOrganizations(ctx context.Context) ([]*models.Organization, error)
 	ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error)
+	// Session
+	GetCurrentSession(ctx context.Context) (*models.Session, error)
+	CreateSession(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (*models.Membership, error)
