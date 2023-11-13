@@ -10,18 +10,18 @@ import (
 const getCurrentSession = `-- name: GetCurrentSession :one
 SELECT id, start_date, end_date, organization_id, in_progress, created_at, updated_at
 FROM sessions
-WHERE in_progress = TRUE
+WHERE organization_id = $1 AND in_progress = TRUE
 `
 
-func (q *Queries) GetCurrentSession(ctx context.Context) (*models.Session, error) {
-	row := q.db.QueryRowContext(ctx, getCurrentSession)
+func (q *Queries) GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error) {
+	row := q.db.QueryRowContext(ctx, getCurrentSession, organizationID)
 	var i models.Session
 	err := row.Scan(
 		&i.ID,
 		&i.StartDate,
 		&i.EndDate,
-		&i.Current,
 		&i.OrganizationID,
+		&i.InProgress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -65,7 +65,7 @@ func (q *Queries) CreateSession(ctx context.Context, arg CreateSessionParams) (*
 		&i.StartDate,
 		&i.EndDate,
 		&i.OrganizationID,
-		&i.Current,
+		&i.InProgress,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

@@ -1,7 +1,7 @@
 -- name: GetCurrentSession :one
 SELECT *
 FROM sessions
-WHERE in_progress = TRUE;
+WHERE organization_id = $1 AND in_progress = TRUE;
 
 -- name: NoSessionInProgress :exec
 UPDATE sessions
