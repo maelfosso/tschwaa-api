@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"tschwaa.com/api/models"
@@ -25,6 +26,9 @@ func (q *Queries) GetCurrentSession(ctx context.Context, organizationID uint64) 
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 

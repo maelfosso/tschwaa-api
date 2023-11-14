@@ -71,7 +71,7 @@ func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 
 		session, err := s.GetCurrentSession(r.Context(), orgId)
 		if err != nil {
-			log.Println("error when creating a session")
+			log.Println("error when getting the current session : ", err)
 			http.Error(w, "ERR_GET_CURR_SESSION_101", http.StatusBadRequest)
 			return
 		}
