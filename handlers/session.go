@@ -22,16 +22,16 @@ type getCurrentSession interface {
 }
 
 type CreateSessionRequest struct {
-	StartDate      time.Time `json:"start_date"`
-	EndDate        time.Time `json:"end_date"`
-	OrganizationId uint64    `json:"organization_id"`
+	StartDate      string `json:"start_date"`
+	EndDate        string `json:"end_date"`
+	OrganizationId uint64 `json:"organization_id"`
 }
 
 func CreateSession(mux chi.Router, s createSession) {
-	mux.Post("/sessions", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID: ", orgId)
+		log.Println("Get Org ID x2: ", orgId)
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -41,9 +41,11 @@ func CreateSession(mux chi.Router, s createSession) {
 			return
 		}
 
+		startDate, _ := time.Parse("2006-01-02", inputs.StartDate)
+		endDate, _ := time.Parse("2006-01-02", inputs.EndDate)
 		session, err := s.CreateSessionTx(r.Context(), storage.CreateSessionParams{
-			StartDate:      inputs.StartDate,
-			EndDate:        inputs.EndDate,
+			StartDate:      startDate,
+			EndDate:        endDate,
 			InProgress:     true,
 			OrganizationID: orgId,
 		})
@@ -64,7 +66,7 @@ func CreateSession(mux chi.Router, s createSession) {
 }
 
 func GetCurrentSession(mux chi.Router, s getCurrentSession) {
-	mux.Get("/sessions/current", func(w http.ResponseWriter, r *http.Request) {
+	mux.Get("/current", func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID: ", orgId)
