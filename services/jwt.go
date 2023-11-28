@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -64,7 +63,6 @@ func ExtractTokenFromRequest(r *http.Request) (string, error) {
 	var tokenString string
 
 	authorizationHeader := r.Header.Get("Authorization")
-	log.Println("Authorization Bearer : ", authorizationHeader)
 	if strings.HasPrefix(authorizationHeader, "Bearer ") {
 		tokenString = strings.TrimPrefix(authorizationHeader, "Bearer ")
 	} else {
@@ -81,7 +79,6 @@ func ExtractTokenFromRequest(r *http.Request) (string, error) {
 func Verifier(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString, err := ExtractTokenFromRequest(r)
-		log.Println("Verifier : ", tokenString, err)
 
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, JwtTokenKey, tokenString)
@@ -101,7 +98,6 @@ func ParseJWTToken(next http.Handler) http.Handler {
 			return
 		}
 
-		log.Println("ParseJWTToken starts with: ", tokenString)
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
