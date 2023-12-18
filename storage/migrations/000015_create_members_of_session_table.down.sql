@@ -1,1 +1,1 @@
-DROP IF EXISTS TABLE members_of_session;
+DROP TABLE IF EXISTS members_of_session;

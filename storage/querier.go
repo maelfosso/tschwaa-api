@@ -34,6 +34,10 @@ type Querier interface {
 	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
 	NoSessionInProgress(ctx context.Context, organizationID uint64) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
+	// Members of session
+	RemoveMemberFromSession(ctx context.Context, arg RemoveMemberFromSessionParams) error
+	RemoveAllMembersFromSession(ctx context.Context, arg RemoveAllMembersFromSessionParams) error
+	AddMemberInSession(ctx context.Context, arg AddMemberInSessionParams) (*models.MembersOfSession, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (*models.Membership, error)

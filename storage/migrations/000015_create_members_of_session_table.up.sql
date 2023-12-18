@@ -3,6 +3,9 @@ CREATE TABLE IF NOT EXISTS members_of_session (
   membership_id INTEGER NOT NULL,
   session_id INTEGER NOT NULL,
 
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
   PRIMARY KEY (id),
   CONSTRAINT fk_mos_sessions_session_id
     FOREIGN KEY (session_id) REFERENCES sessions(id)
