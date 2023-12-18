@@ -26,6 +26,11 @@ type addMemberToSession interface {
 	AddMemberToSession(ctx context.Context, arg storage.AddMemberToSessionParams) (*models.MembersOfSession, error)
 }
 
+type removeMemberFromSession interface {
+	DoesMembershipConcernOrganization(ctx context.Context, arg storage.DoesMembershipConcernOrganizationParams) (*models.Membership, error)
+	RemoveMemberFromSession(ctx context.Context, arg storage.RemoveMemberFromSessionParams) error
+}
+
 type CreateSessionRequest struct {
 	StartDate      string `json:"start_date"`
 	EndDate        string `json:"end_date"`
@@ -189,7 +194,11 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 	})
 }
 
-func RemoveMemberFromSession(mux chi.Router) {
+type RemoveMemberFromSessionRequest struct {
+	MembershipID uint64 `json:"membership_id"`
+}
+
+func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 	mux.Delete("/members", func(w http.ResponseWriter, r *http.Request) {
 		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
@@ -198,5 +207,47 @@ func RemoveMemberFromSession(mux chi.Router) {
 		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 
 		decoder := json.NewDecoder(r.Body)
+
+		var inputs RemoveMemberFromSessionRequest
+		if err := decoder.Decode(&inputs); err != nil {
+			http.Error(w, "ERR_RMV_MBSHIP_SESS_101", http.StatusBadRequest)
+			return
+		}
+
+		// Check if member is part of the organization
+		membership, err := s.DoesMembershipConcernOrganization(r.Context(), storage.DoesMembershipConcernOrganizationParams{
+			ID:             inputs.MembershipID,
+			OrganizationID: orgId,
+		})
+		if err != nil {
+			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgId, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_102", http.StatusBadRequest)
+			return
+		}
+		if membership == nil {
+			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgId, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_103", http.StatusBadRequest)
+			return
+		}
+
+		// Add member to session
+		mos, err := s.RemoveMemberFromSession(r.Context(), storage.RemoveMemberFromSessionParams{
+			SessionID     : sessionId,
+			OrganizationID: orgId,
+			MemberID      : 
+		})
+		if err != nil {
+			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionId, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_104", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(mos); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
 	})
 }
