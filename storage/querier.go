@@ -37,7 +37,7 @@ type Querier interface {
 	// Members of session
 	RemoveMemberFromSession(ctx context.Context, arg RemoveMemberFromSessionParams) error
 	RemoveAllMembersFromSession(ctx context.Context, arg RemoveAllMembersFromSessionParams) error
-	AddMemberInSession(ctx context.Context, arg AddMemberInSessionParams) (*models.MembersOfSession, error)
+	AddMemberToSession(ctx context.Context, arg AddMemberToSessionParams) (*models.MembersOfSession, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (*models.Membership, error)

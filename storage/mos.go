@@ -7,19 +7,19 @@ import (
 	"tschwaa.com/api/models"
 )
 
-const addMemberInSession = `-- name: AddMemberInSession :one
+const addMemberToSession = `-- name: AddMemberToSession :one
 INSERT INTO members_of_session(membership_id, session_id)
 VALUES ($1, $2)
 RETURNING id, membership_id, session_id, created_at, updated_at
 `
 
-type AddMemberInSessionParams struct {
+type AddMemberToSessionParams struct {
 	MembershipID int32 `db:"membership_id" json:"membership_id"`
 	SessionID    int32 `db:"session_id" json:"session_id"`
 }
 
-func (q *Queries) AddMemberInSession(ctx context.Context, arg AddMemberInSessionParams) (*models.MembersOfSession, error) {
-	row := q.db.QueryRowContext(ctx, addMemberInSession, arg.MembershipID, arg.SessionID)
+func (q *Queries) AddMemberToSession(ctx context.Context, arg AddMemberToSessionParams) (*models.MembersOfSession, error) {
+	row := q.db.QueryRowContext(ctx, addMemberToSession, arg.MembershipID, arg.SessionID)
 	var i models.MembersOfSession
 	err := row.Scan(
 		&i.ID,
