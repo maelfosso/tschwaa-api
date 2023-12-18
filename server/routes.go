@@ -57,6 +57,10 @@ func (s *Server) setupRoutes() {
 				r.Route("/sessions", func(r chi.Router) {
 					handlers.CreateSession(r, s.database.Storage)
 					handlers.GetCurrentSession(r, s.database.Storage)
+
+					r.Route("/{sessionID}", func(r chi.Router) {
+						handlers.UpdateSessionMembers(r)
+					})
 				})
 
 				handlers.GetOrganization(r, s.database.Storage)

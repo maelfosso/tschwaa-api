@@ -87,3 +87,40 @@ func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 		}
 	})
 }
+
+type UpdateSessionMembersRequest struct {
+	Members []models.OrganizationMember `json:"members"`
+}
+
+func UpdateSessionMembers(mux chi.Router) {
+	mux.Patch("/members", func(w http.ResponseWriter, r *http.Request) {
+		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID", orgId)
+
+		sessionIdParam := chi.URLParamFromCtx(r.Context(), "sessionID")
+		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+		log.Println("Get Session ID x2: ", sessionId)
+
+		decoder := json.NewDecoder(r.Body)
+
+		var inputs UpdateSessionMembersRequest
+		if err := decoder.Decode(&inputs); err != nil {
+			http.Error(w, "error when decoding the session json data", http.StatusBadRequest)
+			return
+		}
+		log.Println("Request - ", inputs)
+
+		// 0. Delete organization'smembers of that session id
+		// 1. Check if members is part of the organization: Returning its membership ID
+		// 2. Insert the (membership, session) into MembersOfSession
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(true); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_CREATE_SESSION_102", http.StatusBadRequest)
+			return
+		}
+	})
+}
