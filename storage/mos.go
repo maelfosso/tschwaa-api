@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 
 	"tschwaa.com/api/models"
 )
@@ -14,8 +13,8 @@ RETURNING id, membership_id, session_id, created_at, updated_at
 `
 
 type AddMemberToSessionParams struct {
-	MembershipID int32 `db:"membership_id" json:"membership_id"`
-	SessionID    int32 `db:"session_id" json:"session_id"`
+	MembershipID uint64 `db:"membership_id" json:"membership_id"`
+	SessionID    uint64 `db:"session_id" json:"session_id"`
 }
 
 func (q *Queries) AddMemberToSession(ctx context.Context, arg AddMemberToSessionParams) (*models.MembersOfSession, error) {
@@ -40,8 +39,8 @@ AND mos.session_id = $1 AND m.organization_id = $2
 `
 
 type RemoveAllMembersFromSessionParams struct {
-	SessionID      int32         `db:"session_id" json:"session_id"`
-	OrganizationID sql.NullInt32 `db:"organization_id" json:"organization_id"`
+	SessionID      uint64 `db:"session_id" json:"session_id"`
+	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
 }
 
 func (q *Queries) RemoveAllMembersFromSession(ctx context.Context, arg RemoveAllMembersFromSessionParams) error {
@@ -58,9 +57,9 @@ AND mos.session_id = $1 AND m.organization_id = $2 AND m.member_id = $3
 `
 
 type RemoveMemberFromSessionParams struct {
-	SessionID      int32         `db:"session_id" json:"session_id"`
-	OrganizationID sql.NullInt32 `db:"organization_id" json:"organization_id"`
-	MemberID       sql.NullInt32 `db:"member_id" json:"member_id"`
+	SessionID      uint64 `db:"session_id" json:"session_id"`
+	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
+	MemberID       uint64 `db:"member_id" json:"member_id"`
 }
 
 func (q *Queries) RemoveMemberFromSession(ctx context.Context, arg RemoveMemberFromSessionParams) error {

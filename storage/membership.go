@@ -284,8 +284,8 @@ WHERE id = $1 AND organization_id = $2
 `
 
 type DoesMembershipConcernOrganizationParams struct {
-	ID             int32         `db:"id" json:"id"`
-	OrganizationID sql.NullInt32 `db:"organization_id" json:"organization_id"`
+	ID             uint64 `db:"id" json:"id"`
+	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
 }
 
 func (q *Queries) DoesMembershipConcernOrganization(ctx context.Context, arg DoesMembershipConcernOrganizationParams) (*models.Membership, error) {

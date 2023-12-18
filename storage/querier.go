@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 
 	"tschwaa.com/api/models"
 )
@@ -29,7 +28,7 @@ type Querier interface {
 	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
 	ListOrganizationOfMember(ctx context.Context, memberID uint64) ([]*models.Organization, error)
 	ListOrganizations(ctx context.Context) ([]*models.Organization, error)
-	ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error)
+	ListOrganizationsCreatedBy(ctx context.Context, createdBy uint64) ([]*models.Organization, error)
 	// Session
 	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
 	NoSessionInProgress(ctx context.Context, organizationID uint64) error

@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"database/sql"
 
 	"tschwaa.com/api/models"
 )
@@ -130,7 +129,7 @@ FROM organizations
 WHERE created_by = $1
 `
 
-func (q *Queries) ListOrganizationsCreatedBy(ctx context.Context, createdBy sql.NullInt32) ([]*models.Organization, error) {
+func (q *Queries) ListOrganizationsCreatedBy(ctx context.Context, createdBy uint64) ([]*models.Organization, error) {
 	rows, err := q.db.QueryContext(ctx, listOrganizationsCreatedBy, createdBy)
 	if err != nil {
 		return nil, err
