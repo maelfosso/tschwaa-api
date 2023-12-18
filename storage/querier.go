@@ -40,6 +40,7 @@ type Querier interface {
 	AddMemberToSession(ctx context.Context, arg AddMemberToSessionParams) (*models.MembersOfSession, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
+	DoesMembershipConcernOrganization(ctx context.Context, arg DoesMembershipConcernOrganizationParams) (*models.Membership, error)
 	CreateMembership(ctx context.Context, arg CreateMembershipParams) (*models.Membership, error)
 	GetMembersFromOrganization(ctx context.Context, organizationID uint64) ([]*models.OrganizationMember, error)
 	GetMembership(ctx context.Context, id uint64) (*models.Membership, error)

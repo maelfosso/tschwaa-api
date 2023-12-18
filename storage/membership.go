@@ -276,3 +276,36 @@ func (q *Queries) DesactivateInvitationFromLink(ctx context.Context, link string
 	)
 	return &i, err
 }
+
+const doesMembershipConcernOrganization = `-- name: DoesMembershipConcernOrganization :one
+SELECT id, member_id, organization_id, created_at, updated_at, joined, joined_at, position, status, role
+FROM memberships
+WHERE id = $1 AND organization_id = $2
+`
+
+type DoesMembershipConcernOrganizationParams struct {
+	ID             int32         `db:"id" json:"id"`
+	OrganizationID sql.NullInt32 `db:"organization_id" json:"organization_id"`
+}
+
+func (q *Queries) DoesMembershipConcernOrganization(ctx context.Context, arg DoesMembershipConcernOrganizationParams) (*models.Membership, error) {
+	row := q.db.QueryRowContext(ctx, doesMembershipConcernOrganization, arg.ID, arg.OrganizationID)
+	var i models.Membership
+	err := row.Scan(
+		&i.ID,
+		&i.MemberID,
+		&i.OrganizationID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Joined,
+		&i.JoinedAt,
+		&i.Position,
+		&i.Status,
+		&i.Role,
+	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
+	return &i, err
+}

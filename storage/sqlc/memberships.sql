@@ -55,3 +55,8 @@ WHERE link = $1;
 SELECT link
 FROM invitations
 WHERE membership_id = $1;
+
+-- name: DoesMembershipConcernOrganization :one
+SELECT *
+FROM memberships
+WHERE id = $1 AND organization_id = $2;
