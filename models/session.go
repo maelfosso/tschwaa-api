@@ -12,3 +12,12 @@ type Session struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
+
+type MembersOfSession struct {
+	ID           uint64 `json:"id"`
+	MembershipID uint64 `json:"membership_id"`
+	SessionID    uint64 `json:"session_id"`
+
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
