@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -19,6 +20,12 @@ type createSession interface {
 
 type getCurrentSession interface {
 	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
+}
+
+type updateSessionMembers interface {
+	RemoveAllMembersFromSession(ctx context.Context, arg storage.RemoveAllMembersFromSessionParams) error
+	DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
+	AddMemberToSession(ctx context.Context, arg storage.AddMemberToSessionParams) (*models.MembersOfSession, error)
 }
 
 type addMemberToSession interface {
@@ -39,7 +46,9 @@ type CreateSessionRequest struct {
 
 func CreateSession(mux chi.Router, s createSession) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID x2: ", orgId)
 
@@ -53,7 +62,7 @@ func CreateSession(mux chi.Router, s createSession) {
 
 		startDate, _ := time.Parse("2006-01-02", inputs.StartDate)
 		endDate, _ := time.Parse("2006-01-02", inputs.EndDate)
-		session, err := s.CreateSessionTx(r.Context(), storage.CreateSessionParams{
+		session, err := s.CreateSessionTx(ctx, storage.CreateSessionParams{
 			StartDate:      startDate,
 			EndDate:        endDate,
 			InProgress:     true,
@@ -77,11 +86,13 @@ func CreateSession(mux chi.Router, s createSession) {
 
 func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 	mux.Get("/current", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID: ", orgId)
 
-		session, err := s.GetCurrentSession(r.Context(), orgId)
+		session, err := s.GetCurrentSession(ctx, orgId)
 		if err != nil {
 			log.Println("error when getting the current session : ", err)
 			http.Error(w, "ERR_GET_CURR_SESSION_101", http.StatusBadRequest)
@@ -102,13 +113,26 @@ type UpdateSessionMembersRequest struct {
 	Members []models.OrganizationMember `json:"members"`
 }
 
-func UpdateSessionMembers(mux chi.Router) {
+type checkingMembershipResponse struct {
+	MemberId   uint64
+	Membership *models.Membership
+}
+
+type insertMOSResponse struct {
+	MemberId uint64
+	MOS      *models.MembersOfSession
+	Error    string
+}
+
+func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 	mux.Patch("/members", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID", orgId)
 
-		sessionIdParam := chi.URLParamFromCtx(r.Context(), "sessionID")
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 		log.Println("Get Session ID x2: ", sessionId)
 
@@ -121,9 +145,90 @@ func UpdateSessionMembers(mux chi.Router) {
 		}
 		log.Println("Request - ", inputs)
 
+		// 1. Check if members are part of the organization: Returning their membership IDs
+		mapMemberToMembership := make(map[uint64]*models.Membership)
+		countNoMembership := 0
+		wg := new(sync.WaitGroup)
+		wg.Add(len(inputs.Members))
+		for _, member := range inputs.Members {
+			go func(member models.OrganizationMember) {
+				membership, err := svc.DoesMembershipExist(ctx, storage.DoesMembershipExistParams{
+					MemberID:       member.ID,
+					OrganizationID: orgId,
+				})
+				if err != nil {
+					mapMemberToMembership[member.ID] = nil
+					countNoMembership = countNoMembership + 1
+				} else {
+					mapMemberToMembership[member.ID] = membership
+				}
+			}(member)
+		}
+		wg.Wait()
+
+		if countNoMembership > 0 {
+			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgId)
+			http.Error(w, "error because there are membership not members of that organization", http.StatusBadRequest)
+			return
+		}
+
 		// 0. Delete organization'smembers of that session id
-		// 1. Check if members is part of the organization: Returning its membership ID
+		err := svc.RemoveAllMembersFromSession(ctx, storage.RemoveAllMembersFromSessionParams{
+			OrganizationID: orgId,
+			SessionID:      sessionId,
+		})
+		if err != nil {
+			http.Error(w, "error when removing all organization's members from session", http.StatusBadRequest)
+			return
+		}
+
 		// 2. Insert the (membership, session) into MembersOfSession
+		wg = new(sync.WaitGroup)
+		wg.Add(len(inputs.Members))
+		insertMOSChannel := make(chan insertMOSResponse)
+		for memberId, membership := range mapMemberToMembership {
+			go func(memberId uint64, membership *models.Membership, channel chan insertMOSResponse, wg *sync.WaitGroup) {
+				defer wg.Done()
+				mos, err := svc.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
+					MembershipID: membership.ID,
+					SessionID:    sessionId,
+				})
+				if err != nil {
+					channel <- insertMOSResponse{
+						MemberId: memberId,
+						Error:    err.Error(),
+						// Membership: membership,
+						MOS: nil,
+					}
+				} else {
+					channel <- insertMOSResponse{
+						MemberId: memberId,
+						Error:    "",
+						// Membership: membership,
+						MOS: mos,
+					}
+				}
+			}(memberId, membership, insertMOSChannel, wg)
+		}
+
+		go func() {
+			wg.Wait()
+			close(insertMOSChannel)
+		}()
+
+		responses := []invitationSentResponse{}
+		for val := range insertMOSChannel {
+			log.Println("Channel : ", val)
+			// responses = append(responses, val)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(responses); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_IMIO_515", http.StatusBadRequest)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -141,11 +246,13 @@ type AddMemberToSessionRequest struct {
 
 func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 	mux.Post("/members", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID", orgId)
 
-		sessionIdParam := chi.URLParamFromCtx(r.Context(), "sessionID")
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 		log.Println("Get Session ID x2: ", sessionId)
 
@@ -158,7 +265,7 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 		}
 
 		// Check if member is part of the organization
-		membership, err := s.DoesMembershipConcernOrganization(r.Context(), storage.DoesMembershipConcernOrganizationParams{
+		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
 			ID:             inputs.MembershipID,
 			OrganizationID: orgId,
 		})
@@ -174,7 +281,7 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 		}
 
 		// Add member to session
-		mos, err := s.AddMemberToSession(r.Context(), storage.AddMemberToSessionParams{
+		mos, err := s.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
 			MembershipID: inputs.MembershipID,
 			SessionID:    sessionId,
 		})
@@ -200,10 +307,12 @@ type RemoveMemberFromSessionRequest struct {
 
 func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 	mux.Delete("/members", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 
-		sessionIdParam := chi.URLParamFromCtx(r.Context(), "sessionID")
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 
 		decoder := json.NewDecoder(r.Body)
@@ -215,7 +324,7 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		}
 
 		// Check if member is part of the organization
-		membership, err := s.DoesMembershipConcernOrganization(r.Context(), storage.DoesMembershipConcernOrganizationParams{
+		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
 			ID:             inputs.MembershipID,
 			OrganizationID: orgId,
 		})
@@ -231,10 +340,10 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		}
 
 		// Add member to session
-		mos, err := s.RemoveMemberFromSession(r.Context(), storage.RemoveMemberFromSessionParams{
-			SessionID     : sessionId,
+		err = s.RemoveMemberFromSession(ctx, storage.RemoveMemberFromSessionParams{
+			SessionID:      sessionId,
 			OrganizationID: orgId,
-			MemberID      : 
+			MemberID:       0,
 		})
 		if err != nil {
 			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionId, err)
@@ -244,7 +353,7 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(mos); err != nil {
+		if err := json.NewEncoder(w).Encode(true); err != nil {
 			log.Println("error when encoding all the organization")
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
