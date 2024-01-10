@@ -23,9 +23,8 @@ type getCurrentSession interface {
 }
 
 type updateSessionMembers interface {
-	RemoveAllMembersFromSession(ctx context.Context, arg storage.RemoveAllMembersFromSessionParams) error
 	DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
-	AddMemberToSession(ctx context.Context, arg storage.AddMemberToSessionParams) (*models.MembersOfSession, error)
+	UpdateSessionMembersTx(ctx context.Context, arg storage.UpdateSessionMembersParams) error
 }
 
 type addMemberToSession interface {
@@ -118,12 +117,6 @@ type checkingMembershipResponse struct {
 	Membership *models.Membership
 }
 
-type insertMOSResponse struct {
-	MemberId uint64
-	MOS      *models.MembersOfSession
-	Error    string
-}
-
 func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 	mux.Patch("/members", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -151,7 +144,9 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		wg := new(sync.WaitGroup)
 		wg.Add(len(inputs.Members))
 		for _, member := range inputs.Members {
-			go func(member models.OrganizationMember) {
+			go func(member models.OrganizationMember, wg *sync.WaitGroup) {
+				defer wg.Done()
+
 				membership, err := svc.DoesMembershipExist(ctx, storage.DoesMembershipExistParams{
 					MemberID:       member.ID,
 					OrganizationID: orgId,
@@ -162,7 +157,7 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 				} else {
 					mapMemberToMembership[member.ID] = membership
 				}
-			}(member)
+			}(member, wg)
 		}
 		wg.Wait()
 
@@ -172,69 +167,25 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 			return
 		}
 
-		// 0. Delete organization'smembers of that session id
-		err := svc.RemoveAllMembersFromSession(ctx, storage.RemoveAllMembersFromSessionParams{
+		memberships := make([]models.Membership, 0, len(mapMemberToMembership))
+		for _, v := range mapMemberToMembership {
+			memberships = append(memberships, *v)
+		}
+		err := svc.UpdateSessionMembersTx(ctx, storage.UpdateSessionMembersParams{
 			OrganizationID: orgId,
 			SessionID:      sessionId,
+			Memberships:    memberships,
 		})
 		if err != nil {
-			http.Error(w, "error when removing all organization's members from session", http.StatusBadRequest)
+			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgId)
+			http.Error(w, "error when updating members of session", http.StatusBadRequest)
 			return
 		}
-
-		// 2. Insert the (membership, session) into MembersOfSession
-		wg = new(sync.WaitGroup)
-		wg.Add(len(inputs.Members))
-		insertMOSChannel := make(chan insertMOSResponse)
-		for memberId, membership := range mapMemberToMembership {
-			go func(memberId uint64, membership *models.Membership, channel chan insertMOSResponse, wg *sync.WaitGroup) {
-				defer wg.Done()
-				mos, err := svc.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
-					MembershipID: membership.ID,
-					SessionID:    sessionId,
-				})
-				if err != nil {
-					channel <- insertMOSResponse{
-						MemberId: memberId,
-						Error:    err.Error(),
-						// Membership: membership,
-						MOS: nil,
-					}
-				} else {
-					channel <- insertMOSResponse{
-						MemberId: memberId,
-						Error:    "",
-						// Membership: membership,
-						MOS: mos,
-					}
-				}
-			}(memberId, membership, insertMOSChannel, wg)
-		}
-
-		go func() {
-			wg.Wait()
-			close(insertMOSChannel)
-		}()
-
-		responses := []invitationSentResponse{}
-		for val := range insertMOSChannel {
-			log.Println("Channel : ", val)
-			// responses = append(responses, val)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(responses); err != nil {
-			log.Println("error when encoding all the organization")
-			http.Error(w, "ERR_IMIO_515", http.StatusBadRequest)
-			return
-		}
-
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(true); err != nil {
 			log.Println("error when encoding all the organization")
-			http.Error(w, "ERR_CREATE_SESSION_102", http.StatusBadRequest)
+			http.Error(w, "ERR_IMIO_515", http.StatusBadRequest)
 			return
 		}
 	})
