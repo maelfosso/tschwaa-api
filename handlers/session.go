@@ -22,6 +22,10 @@ type getCurrentSession interface {
 	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
 }
 
+type getMembersOfSession interface {
+	ListAllMembersOfSession(ctx context.Context, arg storage.ListAllMembersOfSessionParams) ([]*models.MembersOfSession, error)
+}
+
 type updateSessionMembers interface {
 	DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
 	UpdateSessionMembersTx(ctx context.Context, arg storage.UpdateSessionMembersParams) error
@@ -48,8 +52,8 @@ func CreateSession(mux chi.Router, s createSession) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID x2: ", orgId)
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID x2: ", orgID)
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -65,7 +69,7 @@ func CreateSession(mux chi.Router, s createSession) {
 			StartDate:      startDate,
 			EndDate:        endDate,
 			InProgress:     true,
-			OrganizationID: orgId,
+			OrganizationID: orgID,
 		})
 		if err != nil {
 			log.Println("error when creating a session")
@@ -88,10 +92,10 @@ func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID: ", orgId)
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID: ", orgID)
 
-		session, err := s.GetCurrentSession(ctx, orgId)
+		session, err := s.GetCurrentSession(ctx, orgID)
 		if err != nil {
 			log.Println("error when getting the current session : ", err)
 			http.Error(w, "ERR_GET_CURR_SESSION_101", http.StatusBadRequest)
@@ -103,6 +107,38 @@ func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 		if err := json.NewEncoder(w).Encode(session); err != nil {
 			log.Println("error when encoding the session information")
 			http.Error(w, "ERR_GET_CURR_SESSION_102", http.StatusBadRequest)
+			return
+		}
+	})
+}
+
+func GetMembersOfSession(mux chi.Router, svc getMembersOfSession) {
+	mux.Get("/members", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID", orgID)
+
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+		log.Println("Get Session ID x2: ", sessionID)
+
+		mos, err := svc.ListAllMembersOfSession(ctx, storage.ListAllMembersOfSessionParams{
+			OrganizationID: orgID,
+			SessionID:      sessionID,
+		})
+		if err != nil {
+			log.Printf("error when listing all members of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(mos); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
 		}
 	})
@@ -122,12 +158,12 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID", orgId)
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID", orgID)
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
-		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-		log.Println("Get Session ID x2: ", sessionId)
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+		log.Println("Get Session ID x2: ", sessionID)
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -149,7 +185,7 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 
 				membership, err := svc.DoesMembershipExist(ctx, storage.DoesMembershipExistParams{
 					MemberID:       member.ID,
-					OrganizationID: orgId,
+					OrganizationID: orgID,
 				})
 				if err != nil {
 					mapMemberToMembership[member.ID] = nil
@@ -162,7 +198,7 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		wg.Wait()
 
 		if countNoMembership > 0 {
-			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgId)
+			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgID)
 			http.Error(w, "error because there are membership not members of that organization", http.StatusBadRequest)
 			return
 		}
@@ -172,12 +208,12 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 			memberships = append(memberships, *v)
 		}
 		err := svc.UpdateSessionMembersTx(ctx, storage.UpdateSessionMembersParams{
-			OrganizationID: orgId,
-			SessionID:      sessionId,
+			OrganizationID: orgID,
+			SessionID:      sessionID,
 			Memberships:    memberships,
 		})
 		if err != nil {
-			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgId)
+			log.Printf("error because there are [%d] members who does not belong to the organization [%d]", countNoMembership, orgID)
 			http.Error(w, "error when updating members of session", http.StatusBadRequest)
 			return
 		}
@@ -200,12 +236,12 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID", orgId)
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		log.Println("Get Org ID", orgID)
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
-		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-		log.Println("Get Session ID x2: ", sessionId)
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+		log.Println("Get Session ID x2: ", sessionID)
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -218,15 +254,15 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 		// Check if member is part of the organization
 		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
 			ID:             inputs.MembershipID,
-			OrganizationID: orgId,
+			OrganizationID: orgID,
 		})
 		if err != nil {
-			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgId, err)
+			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_102", http.StatusBadRequest)
 			return
 		}
 		if membership == nil {
-			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgId, err)
+			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_103", http.StatusBadRequest)
 			return
 		}
@@ -234,10 +270,10 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 		// Add member to session
 		mos, err := s.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
 			MembershipID: inputs.MembershipID,
-			SessionID:    sessionId,
+			SessionID:    sessionID,
 		})
 		if err != nil {
-			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionId, err)
+			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_104", http.StatusBadRequest)
 			return
 		}
@@ -261,10 +297,10 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
-		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
-		sessionId, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -277,27 +313,27 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		// Check if member is part of the organization
 		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
 			ID:             inputs.MembershipID,
-			OrganizationID: orgId,
+			OrganizationID: orgID,
 		})
 		if err != nil {
-			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgId, err)
+			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_102", http.StatusBadRequest)
 			return
 		}
 		if membership == nil {
-			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgId, err)
+			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_103", http.StatusBadRequest)
 			return
 		}
 
 		// Add member to session
 		err = s.RemoveMemberFromSession(ctx, storage.RemoveMemberFromSessionParams{
-			SessionID:      sessionId,
-			OrganizationID: orgId,
+			SessionID:      sessionID,
+			OrganizationID: orgID,
 			MemberID:       0,
 		})
 		if err != nil {
-			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionId, err)
+			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_104", http.StatusBadRequest)
 			return
 		}

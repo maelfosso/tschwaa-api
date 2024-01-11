@@ -6,6 +6,59 @@ import (
 	"tschwaa.com/api/models"
 )
 
+const listAllMembersOfSession = `-- name: ListAllMembersOfSession :many
+SELECT mos.id, mos.session_id, mos.created_at, mos.updated_at,
+  m.id as member_id, m.first_name, m.last_name, m.sex, m.phone,
+  a.id as membership_id, a.position, a.role, a.status, a.joined, a.joined_at
+FROM members m
+INNER JOIN memberships a ON m.id = a.member_id
+LEFT JOIN members_of_session mos ON a.id = mos.membership_id AND a.organization_id = $1 AND mos.session_id = $2
+`
+
+type ListAllMembersOfSessionParams struct {
+	OrganizationID uint64 `json:"organization_id"`
+	SessionID      uint64 `json:"session_id"`
+}
+
+func (q *Queries) ListAllMembersOfSession(ctx context.Context, arg ListAllMembersOfSessionParams) ([]*models.MembersOfSession, error) {
+	rows, err := q.db.QueryContext(ctx, listAllMembersOfSession, arg.OrganizationID, arg.SessionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []*models.MembersOfSession{}
+	for rows.Next() {
+		var i models.MembersOfSession
+		if err := rows.Scan(
+			&i.ID,
+			&i.SessionID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MemberID,
+			&i.FirstName,
+			&i.LastName,
+			&i.Sex,
+			&i.Phone,
+			&i.MembershipID,
+			&i.Position,
+			&i.Role,
+			&i.Status,
+			&i.Joined,
+			&i.JoinedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, &i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const addMemberToSession = `-- name: AddMemberToSession :one
 INSERT INTO members_of_session(membership_id, session_id)
 VALUES ($1, $2)
