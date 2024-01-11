@@ -61,6 +61,7 @@ func (s *Server) setupRoutes() {
 					r.Route("/{sessionID}", func(r chi.Router) {
 						handlers.GetMembersOfSession(r, s.database.Storage)
 						handlers.UpdateSessionMembers(r, s.database.Storage)
+						handlers.RemoveMemberFromSession(r, s.database.Storage)
 					})
 				})
 

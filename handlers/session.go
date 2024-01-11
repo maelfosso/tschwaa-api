@@ -293,7 +293,7 @@ type RemoveMemberFromSessionRequest struct {
 }
 
 func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
-	mux.Delete("/members", func(w http.ResponseWriter, r *http.Request) {
+	mux.Delete("/members/{mosID}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
@@ -302,38 +302,17 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 
-		decoder := json.NewDecoder(r.Body)
+		mosIdParam := chi.URLParamFromCtx(ctx, "mosID")
+		mosID, _ := strconv.ParseUint(mosIdParam, 10, 64)
 
-		var inputs RemoveMemberFromSessionRequest
-		if err := decoder.Decode(&inputs); err != nil {
-			http.Error(w, "ERR_RMV_MBSHIP_SESS_101", http.StatusBadRequest)
-			return
-		}
-
-		// Check if member is part of the organization
-		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
-			ID:             inputs.MembershipID,
-			OrganizationID: orgID,
-		})
-		if err != nil {
-			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgID, err)
-			http.Error(w, "ERR_ADD_MBSHIP_SESS_102", http.StatusBadRequest)
-			return
-		}
-		if membership == nil {
-			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgID, err)
-			http.Error(w, "ERR_ADD_MBSHIP_SESS_103", http.StatusBadRequest)
-			return
-		}
-
-		// Add member to session
-		err = s.RemoveMemberFromSession(ctx, storage.RemoveMemberFromSessionParams{
+		// remove member from session
+		err := s.RemoveMemberFromSession(ctx, storage.RemoveMemberFromSessionParams{
+			ID:             mosID,
 			SessionID:      sessionID,
 			OrganizationID: orgID,
-			MemberID:       0,
 		})
 		if err != nil {
-			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionID, err)
+			log.Printf("error when removing mos[%d] of organization[%d] from session[%d]: %s", mosID, orgID, sessionID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_104", http.StatusBadRequest)
 			return
 		}

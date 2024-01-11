@@ -106,16 +106,16 @@ DELETE
 FROM members_of_session mos
 USING memberships m
 WHERE mos.membership_id = m.id
-AND mos.session_id = $1 AND m.organization_id = $2 AND m.member_id = $3
+AND mos.id = $1 AND m.organization_id = $2 AND mos.session_id = $3
 `
 
 type RemoveMemberFromSessionParams struct {
-	SessionID      uint64 `db:"session_id" json:"session_id"`
-	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
-	MemberID       uint64 `db:"member_id" json:"member_id"`
+	ID             uint64 `json:"id"`
+	OrganizationID uint64 `json:"organization_id"`
+	SessionID      uint64 `json:"session_id"`
 }
 
 func (q *Queries) RemoveMemberFromSession(ctx context.Context, arg RemoveMemberFromSessionParams) error {
-	_, err := q.db.ExecContext(ctx, removeMemberFromSession, arg.SessionID, arg.OrganizationID, arg.MemberID)
+	_, err := q.db.ExecContext(ctx, removeMemberFromSession, arg.ID, arg.OrganizationID, arg.SessionID)
 	return err
 }
