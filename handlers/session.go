@@ -27,7 +27,6 @@ type getMembersOfSession interface {
 }
 
 type updateSessionMembers interface {
-	// DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
 	DoesMembershipConcernOrganization(ctx context.Context, arg storage.DoesMembershipConcernOrganizationParams) (*models.Membership, error)
 	UpdateSessionMembersTx(ctx context.Context, arg storage.UpdateSessionMembersParams) ([]*models.MembersOfSession, error)
 }
@@ -146,13 +145,7 @@ func GetMembersOfSession(mux chi.Router, svc getMembersOfSession) {
 }
 
 type UpdateSessionMembersRequest struct {
-	// Members      []models.OrganizationMember `json:"members"`
 	MembershipIDs []uint64 `json:"membership_ids"`
-}
-
-type checkingMembershipResponse struct {
-	MemberId   uint64
-	Membership *models.Membership
 }
 
 func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
@@ -176,8 +169,6 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		}
 		log.Println("Request - ", inputs)
 
-		// 1. Check if members are part of the organization: Returning their membership IDs
-		// mapMemberToMembership := make(map[uint64]*models.Membership)
 		memberships := make([]models.Membership, 0, len(inputs.MembershipIDs))
 		countNoMembership := 0
 		wg := new(sync.WaitGroup)
@@ -191,10 +182,8 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 					OrganizationID: orgID,
 				})
 				if err != nil {
-					// mapMemberToMembership[member.ID] = nil
 					countNoMembership = countNoMembership + 1
 				} else {
-					// mapMemberToMembership[member.ID] = membership
 					memberships = append(memberships, *membership)
 				}
 			}(membershipID, wg)
@@ -207,10 +196,6 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 			return
 		}
 
-		// memberships := make([]models.Membership, 0, len(mapMemberToMembership))
-		// for _, v := range mapMemberToMembership {
-		// 	memberships = append(memberships, *v)
-		// }
 		mos, err := svc.UpdateSessionMembersTx(ctx, storage.UpdateSessionMembersParams{
 			OrganizationID: orgID,
 			SessionID:      sessionID,
@@ -257,7 +242,6 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 
 		membershipID := inputs.MembershipID
 
-		// Check if member is part of the organization
 		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
 			ID:             membershipID,
 			OrganizationID: orgID,
@@ -273,7 +257,6 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 			return
 		}
 
-		// Add member to session
 		mos, err := s.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
 			MembershipID: membershipID,
 			SessionID:    sessionID,
@@ -311,7 +294,6 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 		mosIdParam := chi.URLParamFromCtx(ctx, "mosID")
 		mosID, _ := strconv.ParseUint(mosIdParam, 10, 64)
 
-		// remove member from session
 		err := s.RemoveMemberFromSession(ctx, storage.RemoveMemberFromSessionParams{
 			ID:             mosID,
 			SessionID:      sessionID,
