@@ -251,36 +251,38 @@ func AddMemberToSession(mux chi.Router, s addMemberToSession) {
 			return
 		}
 
+		membershipID := inputs.MembershipID
+
 		// Check if member is part of the organization
 		membership, err := s.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
-			ID:             inputs.MembershipID,
+			ID:             membershipID,
 			OrganizationID: orgID,
 		})
 		if err != nil {
-			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", inputs.MembershipID, orgID, err)
+			log.Printf("error when checking if membership[%d] concerns organization[%d]: %s", membershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_102", http.StatusBadRequest)
 			return
 		}
 		if membership == nil {
-			log.Printf("error membership[%d] not concern by organization[%d]: %s", inputs.MembershipID, orgID, err)
+			log.Printf("error membership[%d] not concern by organization[%d]: %s", membershipID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_103", http.StatusBadRequest)
 			return
 		}
 
 		// Add member to session
 		mos, err := s.AddMemberToSession(ctx, storage.AddMemberToSessionParams{
-			MembershipID: inputs.MembershipID,
+			MembershipID: membershipID,
 			SessionID:    sessionID,
 		})
 		if err != nil {
-			log.Printf("error when adding membership[%d] to session[%d]: %s", inputs.MembershipID, sessionID, err)
+			log.Printf("error when adding membership[%d] to session[%d]: %s", membershipID, sessionID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_104", http.StatusBadRequest)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(mos); err != nil {
+		if err := json.NewEncoder(w).Encode(mos.ID); err != nil {
 			log.Println("error when encoding all the organization")
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
