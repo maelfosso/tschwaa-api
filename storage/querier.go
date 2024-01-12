@@ -64,7 +64,7 @@ type QuerierTx interface {
 	// Session
 	CreateSessionTx(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Members of session
-	UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) error
+	UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) ([]*models.MembersOfSession, error)
 	// Membership
 	CreateInvitationTx(ctx context.Context, arg CreateMembershipInvitationParams) (*models.Organization, error)
 	// Invitation

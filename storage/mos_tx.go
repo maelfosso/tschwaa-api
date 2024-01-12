@@ -22,8 +22,8 @@ type insertMOSResponse struct {
 	Error    string
 }
 
-func (store *SQLStorage) UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) error {
-	responses := []insertMOSResponse{}
+func (store *SQLStorage) UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) ([]*models.MembersOfSession, error) {
+	responses := make([]*models.MembersOfSession, 0, len(arg.Memberships))
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		// 0. Delete organization'smembers of that session id
@@ -75,11 +75,11 @@ func (store *SQLStorage) UpdateSessionMembersTx(ctx context.Context, arg UpdateS
 
 		for val := range insertMOSChannel {
 			log.Println("Channel : ", val)
-			responses = append(responses, val)
+			responses = append(responses, val.MOS)
 		}
 
 		return nil
 	})
 
-	return err
+	return responses, err
 }

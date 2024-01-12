@@ -27,8 +27,9 @@ type getMembersOfSession interface {
 }
 
 type updateSessionMembers interface {
-	DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
-	UpdateSessionMembersTx(ctx context.Context, arg storage.UpdateSessionMembersParams) error
+	// DoesMembershipExist(ctx context.Context, arg storage.DoesMembershipExistParams) (*models.Membership, error)
+	DoesMembershipConcernOrganization(ctx context.Context, arg storage.DoesMembershipConcernOrganizationParams) (*models.Membership, error)
+	UpdateSessionMembersTx(ctx context.Context, arg storage.UpdateSessionMembersParams) ([]*models.MembersOfSession, error)
 }
 
 type addMemberToSession interface {
@@ -145,7 +146,8 @@ func GetMembersOfSession(mux chi.Router, svc getMembersOfSession) {
 }
 
 type UpdateSessionMembersRequest struct {
-	Members []models.OrganizationMember `json:"members"`
+	// Members      []models.OrganizationMember `json:"members"`
+	MembershipIDs []uint64 `json:"membership_ids"`
 }
 
 type checkingMembershipResponse struct {
@@ -175,25 +177,27 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		log.Println("Request - ", inputs)
 
 		// 1. Check if members are part of the organization: Returning their membership IDs
-		mapMemberToMembership := make(map[uint64]*models.Membership)
+		// mapMemberToMembership := make(map[uint64]*models.Membership)
+		memberships := make([]models.Membership, 0, len(inputs.MembershipIDs))
 		countNoMembership := 0
 		wg := new(sync.WaitGroup)
-		wg.Add(len(inputs.Members))
-		for _, member := range inputs.Members {
-			go func(member models.OrganizationMember, wg *sync.WaitGroup) {
+		wg.Add(len(inputs.MembershipIDs))
+		for _, membershipID := range inputs.MembershipIDs {
+			go func(membershipID uint64, wg *sync.WaitGroup) {
 				defer wg.Done()
 
-				membership, err := svc.DoesMembershipExist(ctx, storage.DoesMembershipExistParams{
-					MemberID:       member.ID,
+				membership, err := svc.DoesMembershipConcernOrganization(ctx, storage.DoesMembershipConcernOrganizationParams{
+					ID:             membershipID,
 					OrganizationID: orgID,
 				})
 				if err != nil {
-					mapMemberToMembership[member.ID] = nil
+					// mapMemberToMembership[member.ID] = nil
 					countNoMembership = countNoMembership + 1
 				} else {
-					mapMemberToMembership[member.ID] = membership
+					// mapMemberToMembership[member.ID] = membership
+					memberships = append(memberships, *membership)
 				}
-			}(member, wg)
+			}(membershipID, wg)
 		}
 		wg.Wait()
 
@@ -203,11 +207,11 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 			return
 		}
 
-		memberships := make([]models.Membership, 0, len(mapMemberToMembership))
-		for _, v := range mapMemberToMembership {
-			memberships = append(memberships, *v)
-		}
-		err := svc.UpdateSessionMembersTx(ctx, storage.UpdateSessionMembersParams{
+		// memberships := make([]models.Membership, 0, len(mapMemberToMembership))
+		// for _, v := range mapMemberToMembership {
+		// 	memberships = append(memberships, *v)
+		// }
+		mos, err := svc.UpdateSessionMembersTx(ctx, storage.UpdateSessionMembersParams{
 			OrganizationID: orgID,
 			SessionID:      sessionID,
 			Memberships:    memberships,
@@ -219,7 +223,7 @@ func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(true); err != nil {
+		if err := json.NewEncoder(w).Encode(mos); err != nil {
 			log.Println("error when encoding all the organization")
 			http.Error(w, "ERR_IMIO_515", http.StatusBadRequest)
 			return
