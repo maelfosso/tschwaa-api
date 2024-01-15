@@ -47,3 +47,28 @@ type SessionPlace struct {
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
+
+type SessionPlaceOnline struct {
+	ID             uint64     `json:"id"`
+	Type           string     `json:"type"`
+	URL            string     `json:"url"`
+	SessionPlaceID uint64     `json:"session_place_id"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+type SessionPlaceGivenVenue struct {
+	ID             uint64     `json:"id"`
+	Name           string     `json:"name"`
+	Location       string     `json:"location"`
+	SessionPlaceID uint64     `json:"session_place_id"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+type SessionPlaceMemberHome struct {
+	ID             uint64     `json:"id"`
+	SessionPlaceID uint64     `json:"session_place_id"`
+	CreatedAt      *time.Time `json:"created_at,omitempty"`
+	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
