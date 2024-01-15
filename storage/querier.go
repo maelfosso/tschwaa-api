@@ -31,6 +31,7 @@ type Querier interface {
 	ListOrganizationsCreatedBy(ctx context.Context, createdBy uint64) ([]*models.Organization, error)
 	// Session
 	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
+	GetSession(ctx context.Context, arg GetSessionParams) (*models.Session, error)
 	NoSessionInProgress(ctx context.Context, organizationID uint64) error
 	CreateSession(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Members of session
@@ -38,6 +39,15 @@ type Querier interface {
 	RemoveMemberFromSession(ctx context.Context, arg RemoveMemberFromSessionParams) error
 	RemoveAllMembersFromSession(ctx context.Context, arg RemoveAllMembersFromSessionParams) error
 	AddMemberToSession(ctx context.Context, arg AddMemberToSessionParams) (*models.MembersOfSession, error)
+	// Session Place
+	CreateSessionPlace(ctx context.Context, arg CreateSessionPlaceParams) (*models.SessionPlace, error)
+	CreateSessionPlaceGivenVenue(ctx context.Context, arg CreateSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error)
+	CreateSessionPlaceMemberHome(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesMemberHome, error)
+	CreateSessionPlaceOnline(ctx context.Context, arg CreateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error)
+	DeleteSessionPlaceGivenVenue(ctx context.Context, id uint64) error
+	DeleteSessionPlaceMemberHome(ctx context.Context, id uint64) error
+	DeleteSessionPlaceOnline(ctx context.Context, id uint64) error
+	UpdateSessionPlace(ctx context.Context, arg UpdateSessionPlaceParams) (*models.SessionPlace, error)
 	// Membership
 	DoesMembershipExist(ctx context.Context, arg DoesMembershipExistParams) (*models.Membership, error)
 	DoesMembershipConcernOrganization(ctx context.Context, arg DoesMembershipConcernOrganizationParams) (*models.Membership, error)
