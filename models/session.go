@@ -39,3 +39,11 @@ type MembersOfSession struct {
 	Joined       bool       `json:"joined"`
 	JoinedAt     *time.Time `json:"joined_at"`
 }
+
+type SessionPlace struct {
+	ID        uint64     `json:"id"`
+	Type      string     `json:"type"`
+	SessionID uint64     `json:"session_id"`
+	CreatedAt *time.Time `json:"created_at,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
