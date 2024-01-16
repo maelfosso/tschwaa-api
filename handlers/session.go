@@ -113,7 +113,7 @@ func GetCurrentSession(mux chi.Router, s getCurrentSession) {
 }
 
 func GetMembersOfSession(mux chi.Router, svc getMembersOfSession) {
-	mux.Get("/members", func(w http.ResponseWriter, r *http.Request) {
+	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
@@ -149,7 +149,7 @@ type UpdateSessionMembersRequest struct {
 }
 
 func UpdateSessionMembers(mux chi.Router, svc updateSessionMembers) {
-	mux.Patch("/members", func(w http.ResponseWriter, r *http.Request) {
+	mux.Patch("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
@@ -221,7 +221,7 @@ type AddMemberToSessionRequest struct {
 }
 
 func AddMemberToSession(mux chi.Router, s addMemberToSession) {
-	mux.Post("/members", func(w http.ResponseWriter, r *http.Request) {
+	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
@@ -282,7 +282,7 @@ type RemoveMemberFromSessionRequest struct {
 }
 
 func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
-	mux.Delete("/members/{mosID}", func(w http.ResponseWriter, r *http.Request) {
+	mux.Delete("/{mosID}", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")

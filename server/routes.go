@@ -59,10 +59,14 @@ func (s *Server) setupRoutes() {
 					handlers.GetCurrentSession(r, s.database.Storage)
 
 					r.Route("/{sessionID}", func(r chi.Router) {
-						handlers.GetMembersOfSession(r, s.database.Storage)
-						handlers.AddMemberToSession(r, s.database.Storage)
-						handlers.UpdateSessionMembers(r, s.database.Storage)
-						handlers.RemoveMemberFromSession(r, s.database.Storage)
+
+						r.Route("/members", func(r chi.Router) {
+							handlers.GetMembersOfSession(r, s.database.Storage)
+							handlers.AddMemberToSession(r, s.database.Storage)
+							handlers.UpdateSessionMembers(r, s.database.Storage)
+							handlers.RemoveMemberFromSession(r, s.database.Storage)
+						})
+
 					})
 				})
 
