@@ -77,6 +77,8 @@ type QuerierTx interface {
 	CreateOrganizationWithMembershipTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error)
 	// Session
 	CreateSessionTx(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
+	// Session Place
+	GetSessionPlaceTx(ctx context.Context, sessionID uint64) (*models.ISessionPlace, error)
 	// Members of session
 	UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) ([]*models.MembersOfSession, error)
 	// Membership
