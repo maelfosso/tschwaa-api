@@ -1,6 +1,11 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"tschwaa.com/api/common"
+)
 
 type Session struct {
 	ID             uint64    `json:"id"`
@@ -48,6 +53,12 @@ type SessionPlace struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
+type ISessionPlace interface {
+	GetSessionPlaceID() uint64
+	GetType() string
+	GetDetails() string
+}
+
 type SessionPlacesOnline struct {
 	ID             uint64     `json:"id"`
 	Type           string     `json:"type"`
@@ -55,6 +66,18 @@ type SessionPlacesOnline struct {
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+func (place SessionPlacesOnline) GetSessionPlaceID() uint64 {
+	return place.SessionPlaceID
+}
+
+func (place SessionPlacesOnline) GetType() string {
+	return common.SESSION_PLACE_ONLINE
+}
+
+func (place SessionPlacesOnline) GetDetails() string {
+	return fmt.Sprintf("%s (%s)", place.Type, place.Url)
 }
 
 type SessionPlacesGivenVenue struct {
@@ -66,9 +89,33 @@ type SessionPlacesGivenVenue struct {
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 }
 
+func (place SessionPlacesGivenVenue) GetSessionPlaceID() uint64 {
+	return place.SessionPlaceID
+}
+
+func (place SessionPlacesGivenVenue) GetType() string {
+	return common.SESSION_PLACE_GIVEN_VENUE
+}
+
+func (place SessionPlacesGivenVenue) GetDetails() string {
+	return fmt.Sprintf("%s (%s)", place.Name, place.Location)
+}
+
 type SessionPlacesMemberHome struct {
 	ID             uint64     `json:"id"`
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+func (place SessionPlacesMemberHome) GetSessionPlaceID() uint64 {
+	return place.SessionPlaceID
+}
+
+func (place SessionPlacesMemberHome) GetType() string {
+	return common.SESSION_PLACE_MEMBER_HOME
+}
+
+func (place SessionPlacesMemberHome) GetDetails() string {
+	return ""
 }
