@@ -58,3 +58,23 @@ UPDATE session_places
 SET type = $2
 WHERE id = $1
 RETURNING *;
+
+-- name: GetSessionPlace :one
+SELECT *
+FROM session_places
+WHERE session_id = $1;
+
+-- name: GetSessionPlaceOnline :one
+SELECT *
+FROM session_places_online
+WHERE session_place_id = $1;
+
+-- name: GetSessionPlaceGiveVenue :one
+SELECT *
+FROM session_places_given_venue
+WHERE session_place_id = $1;
+
+-- name: GetSessionPlaceMemberHome :one
+SELECT *
+FROM session_places_member_home
+WHERE session_place_id = $1;
