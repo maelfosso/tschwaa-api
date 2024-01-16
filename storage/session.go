@@ -39,12 +39,12 @@ WHERE organization_id = $1 AND id = $2
 `
 
 type GetSessionParams struct {
-	OrganizationID int32 `db:"organization_id" json:"organization_id"`
-	ID             int32 `db:"id" json:"id"`
+	OrganizationID uint64 `db:"organization_id" json:"organization_id"`
+	SessionID      uint64 `db:"id" json:"session_id"`
 }
 
 func (q *Queries) GetSession(ctx context.Context, arg GetSessionParams) (*models.Session, error) {
-	row := q.db.QueryRowContext(ctx, getSession, arg.OrganizationID, arg.ID)
+	row := q.db.QueryRowContext(ctx, getSession, arg.OrganizationID, arg.SessionID)
 	var i models.Session
 	err := row.Scan(
 		&i.ID,
