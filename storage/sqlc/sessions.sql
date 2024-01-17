@@ -59,10 +59,15 @@ SET type = $2
 WHERE id = $1
 RETURNING *;
 
--- name: GetSessionPlace :one
+-- name: GetSessionPlaceFromSession :one
 SELECT *
 FROM session_places
 WHERE session_id = $1;
+
+-- name: GetSessionPlace :one
+SELECT *
+FROM session_places
+WHERE id = $1 and session_id = $2;
 
 -- name: GetSessionPlaceOnline :one
 SELECT *
