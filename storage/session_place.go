@@ -39,7 +39,7 @@ RETURNING id, name, location, session_place_id, created_at, updated_at
 type CreateSessionPlaceGivenVenueParams struct {
 	Name           string      `db:"name" json:"name"`
 	Location       interface{} `db:"location" json:"location"`
-	SessionPlaceID uint64      `db:"session_place_id" json:"session_place_id"`
+	SessionPlaceID uint64      `json:"session_place_id"`
 }
 
 func (q *Queries) CreateSessionPlaceGivenVenue(ctx context.Context, arg CreateSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error) {
@@ -83,7 +83,7 @@ RETURNING id, type, url, session_place_id, created_at, updated_at
 type CreateSessionPlaceOnlineParams struct {
 	Type           string `db:"type" json:"type"`
 	Url            string `db:"url" json:"url"`
-	SessionPlaceID uint64 `db:"session_place_id" json:"session_place_id"`
+	SessionPlaceID uint64 `json:"session_place_id"`
 }
 
 func (q *Queries) CreateSessionPlaceOnline(ctx context.Context, arg CreateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error) {
@@ -141,7 +141,7 @@ RETURNING id, type, session_id, created_at, updated_at
 `
 
 type UpdateSessionPlaceParams struct {
-	ID   uint64 `db:"id" json:"id"`
+	ID   uint64 `json:"id"`
 	Type string `db:"type" json:"type"`
 }
 
@@ -204,11 +204,36 @@ func (q *Queries) GetSessionPlace(ctx context.Context, arg GetSessionPlaceParams
 const getSessionPlaceGiveVenue = `-- name: GetSessionPlaceGiveVenue :one
 SELECT id, name, location, session_place_id, created_at, updated_at
 FROM session_places_given_venue
+WHERE id = $1 AND session_place_id = $2
+`
+
+type GetSessionPlaceGiveVenueParams struct {
+	ID             uint64 `json:"id"`
+	SessionPlaceID uint64 `json:"session_place_id"`
+}
+
+func (q *Queries) GetSessionPlaceGiveVenue(ctx context.Context, arg GetSessionPlaceGiveVenueParams) (*models.SessionPlacesGivenVenue, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceGiveVenue, arg.ID, arg.SessionPlaceID)
+	var i models.SessionPlacesGivenVenue
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Location,
+		&i.SessionPlaceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const getSessionPlaceGiveVenueFromSessionPlace = `-- name: GetSessionPlaceGiveVenueFromSessionPlace :one
+SELECT id, name, location, session_place_id, created_at, updated_at
+FROM session_places_given_venue
 WHERE session_place_id = $1
 `
 
-func (q *Queries) GetSessionPlaceGiveVenue(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesGivenVenue, error) {
-	row := q.db.QueryRowContext(ctx, getSessionPlaceGiveVenue, sessionPlaceID)
+func (q *Queries) GetSessionPlaceGiveVenueFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesGivenVenue, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceGiveVenueFromSessionPlace, sessionPlaceID)
 	var i models.SessionPlacesGivenVenue
 	err := row.Scan(
 		&i.ID,
@@ -224,11 +249,34 @@ func (q *Queries) GetSessionPlaceGiveVenue(ctx context.Context, sessionPlaceID u
 const getSessionPlaceMemberHome = `-- name: GetSessionPlaceMemberHome :one
 SELECT id, session_place_id, created_at, updated_at
 FROM session_places_member_home
+WHERE id = $1 AND session_place_id = $2
+`
+
+type GetSessionPlaceMemberHomeParams struct {
+	ID             uint64 `json:"id"`
+	SessionPlaceID uint64 `json:"session_place_id"`
+}
+
+func (q *Queries) GetSessionPlaceMemberHome(ctx context.Context, arg GetSessionPlaceMemberHomeParams) (*models.SessionPlacesMemberHome, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceMemberHome, arg.ID, arg.SessionPlaceID)
+	var i models.SessionPlacesMemberHome
+	err := row.Scan(
+		&i.ID,
+		&i.SessionPlaceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const getSessionPlaceMemberHomeFromSessionPlace = `-- name: GetSessionPlaceMemberHomeFromSessionPlace :one
+SELECT id, session_place_id, created_at, updated_at
+FROM session_places_member_home
 WHERE session_place_id = $1
 `
 
-func (q *Queries) GetSessionPlaceMemberHome(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesMemberHome, error) {
-	row := q.db.QueryRowContext(ctx, getSessionPlaceMemberHome, sessionPlaceID)
+func (q *Queries) GetSessionPlaceMemberHomeFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesMemberHome, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceMemberHomeFromSessionPlace, sessionPlaceID)
 	var i models.SessionPlacesMemberHome
 	err := row.Scan(
 		&i.ID,
@@ -242,11 +290,36 @@ func (q *Queries) GetSessionPlaceMemberHome(ctx context.Context, sessionPlaceID 
 const getSessionPlaceOnline = `-- name: GetSessionPlaceOnline :one
 SELECT id, type, url, session_place_id, created_at, updated_at
 FROM session_places_online
+WHERE id = $1 AND session_place_id = $2
+`
+
+type GetSessionPlaceOnlineParams struct {
+	ID             uint64 `json:"id"`
+	SessionPlaceID uint64 `json:"session_place_id"`
+}
+
+func (q *Queries) GetSessionPlaceOnline(ctx context.Context, arg GetSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceOnline, arg.ID, arg.SessionPlaceID)
+	var i models.SessionPlacesOnline
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Url,
+		&i.SessionPlaceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const getSessionPlaceOnlineFromSessionPlace = `-- name: GetSessionPlaceOnlineFromSessionPlace :one
+SELECT id, type, url, session_place_id, created_at, updated_at
+FROM session_places_online
 WHERE session_place_id = $1
 `
 
-func (q *Queries) GetSessionPlaceOnline(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesOnline, error) {
-	row := q.db.QueryRowContext(ctx, getSessionPlaceOnline, sessionPlaceID)
+func (q *Queries) GetSessionPlaceOnlineFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesOnline, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceOnlineFromSessionPlace, sessionPlaceID)
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,

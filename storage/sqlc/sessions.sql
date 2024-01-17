@@ -69,17 +69,32 @@ SELECT *
 FROM session_places
 WHERE id = $1 and session_id = $2;
 
+-- name: GetSessionPlaceOnlineFromSessionPlace :one
+SELECT *
+FROM session_places_online
+WHERE session_place_id = $1;
+
 -- name: GetSessionPlaceOnline :one
 SELECT *
 FROM session_places_online
+WHERE id = $1 AND session_place_id = $2;
+
+-- name: GetSessionPlaceGiveVenueFromSessionPlace :one
+SELECT *
+FROM session_places_given_venue
 WHERE session_place_id = $1;
 
 -- name: GetSessionPlaceGiveVenue :one
 SELECT *
 FROM session_places_given_venue
+WHERE id = $1 AND session_place_id = $2;
+
+-- name: GetSessionPlaceMemberHomeFromSessionPlace :one
+SELECT *
+FROM session_places_member_home
 WHERE session_place_id = $1;
 
 -- name: GetSessionPlaceMemberHome :one
 SELECT *
 FROM session_places_member_home
-WHERE session_place_id = $1;
+WHERE id = $1 AND session_place_id = $2;

@@ -12,7 +12,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 	var subSessionPlace models.ISessionPlace
 
 	err := store.execTx(ctx, func(q *Queries) error {
-		sessionPlace, err := q.GetSessionPlace(ctx, sessionID)
+		sessionPlace, err := q.GetSessionPlaceFromSession(ctx, sessionID)
 		if err != nil {
 			return utils.Fail(
 				"error when getting session place",
@@ -22,7 +22,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 		}
 
 		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
-			subSessionPlace, err = q.GetSessionPlaceOnline(ctx, sessionPlace.ID)
+			subSessionPlace, err = q.GetSessionPlaceOnlineFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
@@ -32,7 +32,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 				)
 			}
 		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
-			subSessionPlace, err = q.GetSessionPlaceGiveVenue(ctx, sessionPlace.ID)
+			subSessionPlace, err = q.GetSessionPlaceGiveVenueFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
@@ -42,7 +42,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 				)
 			}
 		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
-			subSessionPlace, err = q.GetSessionPlaceMemberHome(ctx, sessionPlace.ID)
+			subSessionPlace, err = q.GetSessionPlaceMemberHomeFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
