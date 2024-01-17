@@ -520,3 +520,39 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 		}
 	})
 }
+
+type changePlaceOfSession interface {
+}
+
+type ChangePlaceOfSessionRequest struct {
+	SessionPlaceType string `json:"session_place_type"`
+	Type             string `json:"type,omitempty"`
+	Url              string `json:"url,omitempty"`
+	Name             string `json:"name,omitempty"`
+	Location         string `json:"location,omitempty"`
+}
+
+func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
+	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+
+		// 0- check if a previous session place exists
+		// 		if so, delete it
+		//			- delete the sub session place
+		//			- delete the session place
+		//		Transaction
+
+		// 1- According to the type of the new session place, create
+		//		- create the session place
+		//		- create the sub session place
+		//		Transaction
+
+		// The whole as a transaction
+	})
+}

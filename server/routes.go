@@ -70,6 +70,7 @@ func (s *Server) setupRoutes() {
 						r.Route("/place", func(r chi.Router) {
 							handlers.GetPlaceOfSession(r, s.database.Storage)
 							handlers.UpdatePlaceOfSession(r, s.database.Storage)
+							handlers.ChangePlaceOfSession(r, s.database.Storage)
 						})
 
 					})
