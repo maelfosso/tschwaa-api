@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"tschwaa.com/api/common"
 	"tschwaa.com/api/models"
 	"tschwaa.com/api/storage"
 )
@@ -363,10 +364,159 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 }
 
 type updatePlaceOfSession interface {
+	GetSessionPlace(ctx context.Context, arg storage.GetSessionPlaceParams) (*models.SessionPlace, error)
+	GetSessionPlaceOnline(ctx context.Context, arg storage.GetSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error)
+	GetSessionPlaceGivenVenue(ctx context.Context, arg storage.GetSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error)
+	GetSessionPlaceMemberHome(ctx context.Context, arg storage.GetSessionPlaceMemberHomeParams) (*models.SessionPlacesMemberHome, error)
+	UpdateSessionPlaceOnline(ctx context.Context, arg storage.UpdateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error)
+	UpdateSessionPlaceGivenVenue(ctx context.Context, arg storage.UpdateSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error)
+}
+
+type UpdatePlaceOfSessionRequest struct {
+	ID       uint64 `json:"id"`
+	Type     string `json:"type,omitempty"`
+	Url      string `json:"url,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Location string `json:"location,omitempty"`
 }
 
 func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
-	mux.Patch("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.Patch("/{sessionPlaceID}", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
+		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
+
+		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
+		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
+
+		sessionPlaceIdParam := chi.URLParamFromCtx(ctx, "sessionPlaceID")
+		sessionPlaceID, _ := strconv.ParseUint(sessionPlaceIdParam, 10, 64)
+
+		sessionPlace, err := svc.GetSessionPlace(ctx, storage.GetSessionPlaceParams{
+			ID:        sessionPlaceID,
+			SessionID: sessionID,
+		})
+		if err != nil {
+			log.Printf("error when listing all members of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
+		if sessionPlace == nil {
+			log.Printf("there is no session place with id[%d] from session[%d] of the organization[%d]", sessionPlaceID, sessionID, orgID)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
+
+		decoder := json.NewDecoder(r.Body)
+
+		var inputs UpdatePlaceOfSessionRequest
+		if err := decoder.Decode(&inputs); err != nil {
+			http.Error(w, "error when decoding the session json data", http.StatusBadRequest)
+			return
+		}
+
+		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
+			sessionPlaceOnline, err := svc.GetSessionPlaceOnline(ctx, storage.GetSessionPlaceOnlineParams{
+				ID:             inputs.ID,
+				SessionPlaceID: sessionPlaceID,
+			})
+			if err != nil {
+				log.Printf(
+					"error when getting online session place[%d] of session place [%d] from session[%d] of the organization[%d]: %w",
+					inputs.ID, sessionPlaceID, sessionID, orgID, err,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+			if sessionPlaceOnline == nil {
+				log.Printf(
+					"there is no online session place with id[%d] of session place [%d] from session[%d] of the organization[%d]",
+					inputs.ID, sessionPlaceID, sessionID, orgID,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+
+			sessionPlaceOnline, err = svc.UpdateSessionPlaceOnline(ctx, storage.UpdateSessionPlaceOnlineParams{
+				ID:             sessionPlaceOnline.ID,
+				SessionPlaceID: sessionPlaceID,
+				Type:           inputs.Type,
+				Url:            inputs.Url,
+			})
+			if err != nil {
+				log.Printf(
+					"error when updating online session place[%d] of session place [%d] from session[%d] of the organization[%d]: %w",
+					inputs.ID, sessionPlaceID, sessionID, orgID, err,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
+			sessionPlaceGivenVenue, err := svc.GetSessionPlaceGivenVenue(ctx, storage.GetSessionPlaceGivenVenueParams{
+				ID:             inputs.ID,
+				SessionPlaceID: sessionPlaceID,
+			})
+			if err != nil {
+				log.Printf(
+					"error when getting online session place[%d] of session place [%d] from session[%d] of the organization[%d]: %w",
+					inputs.ID, sessionPlaceID, sessionID, orgID, err,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+			if sessionPlaceGivenVenue == nil {
+				log.Printf(
+					"there is no online session place with id[%d] of session place [%d] from session[%d] of the organization[%d]",
+					inputs.ID, sessionPlaceID, sessionID, orgID,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+
+			sessionPlaceGivenVenue, err = svc.UpdateSessionPlaceGivenVenue(ctx, storage.UpdateSessionPlaceGivenVenueParams{
+				ID:             sessionPlaceGivenVenue.ID,
+				SessionPlaceID: sessionPlaceID,
+				Name:           inputs.Name,
+				Location:       inputs.Location,
+			})
+			if err != nil {
+				log.Printf(
+					"error when updating given venue session place[%d] of session place [%d] from session[%d] of the organization[%d]: %w",
+					inputs.ID, sessionPlaceID, sessionID, orgID, err,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
+			sessionPlaceMemberHone, err := svc.GetSessionPlaceMemberHome(ctx, storage.GetSessionPlaceMemberHomeParams{
+				ID:             inputs.ID,
+				SessionPlaceID: sessionPlaceID,
+			})
+			if err != nil {
+				log.Printf(
+					"error when getting online session place[%d] of session place [%d] from session[%d] of the organization[%d]: %w",
+					inputs.ID, sessionPlaceID, sessionID, orgID, err,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+			if sessionPlaceMemberHone == nil {
+				log.Printf(
+					"there is no online session place with id[%d] of session place [%d] from session[%d] of the organization[%d]",
+					inputs.ID, sessionPlaceID, sessionID, orgID,
+				)
+				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+				return
+			}
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(true); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
 	})
 }
