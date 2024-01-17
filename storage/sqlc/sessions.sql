@@ -79,12 +79,12 @@ SELECT *
 FROM session_places_online
 WHERE id = $1 AND session_place_id = $2;
 
--- name: GetSessionPlaceGiveVenueFromSessionPlace :one
+-- name: GetSessionPlaceGivenVenueFromSessionPlace :one
 SELECT *
 FROM session_places_given_venue
 WHERE session_place_id = $1;
 
--- name: GetSessionPlaceGiveVenue :one
+-- name: GetSessionPlaceGivenVenue :one
 SELECT *
 FROM session_places_given_venue
 WHERE id = $1 AND session_place_id = $2;
@@ -98,3 +98,21 @@ WHERE session_place_id = $1;
 SELECT *
 FROM session_places_member_home
 WHERE id = $1 AND session_place_id = $2;
+
+-- name: UpdateSessionPlaceOnline :one
+UPDATE session_places_online
+SET type = $3, url = $4
+WHERE id = $1 AND session_place_id = $2
+RETURNING *;
+
+-- name: UpdateSessionPlaceGivenVenue :one
+UPDATE session_places_given_venue
+SET name = $3, location = $4
+WHERE id = $1 AND session_place_id = $2
+RETURNING *;
+
+-- -- name: UpdateSessionPlaceMemberHome :one
+-- UPDATE session_places_member_home
+-- SET 
+-- WHERE id = $1 AND session_place_id = 2
+-- RETURNING *;

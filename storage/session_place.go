@@ -201,19 +201,19 @@ func (q *Queries) GetSessionPlace(ctx context.Context, arg GetSessionPlaceParams
 	return &i, err
 }
 
-const getSessionPlaceGiveVenue = `-- name: GetSessionPlaceGiveVenue :one
+const getSessionPlaceGivenVenue = `-- name: GetSessionPlaceGivenVenue :one
 SELECT id, name, location, session_place_id, created_at, updated_at
 FROM session_places_given_venue
 WHERE id = $1 AND session_place_id = $2
 `
 
-type GetSessionPlaceGiveVenueParams struct {
+type GetSessionPlaceGivenVenueParams struct {
 	ID             uint64 `json:"id"`
 	SessionPlaceID uint64 `json:"session_place_id"`
 }
 
-func (q *Queries) GetSessionPlaceGiveVenue(ctx context.Context, arg GetSessionPlaceGiveVenueParams) (*models.SessionPlacesGivenVenue, error) {
-	row := q.db.QueryRowContext(ctx, getSessionPlaceGiveVenue, arg.ID, arg.SessionPlaceID)
+func (q *Queries) GetSessionPlaceGivenVenue(ctx context.Context, arg GetSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceGivenVenue, arg.ID, arg.SessionPlaceID)
 	var i models.SessionPlacesGivenVenue
 	err := row.Scan(
 		&i.ID,
@@ -226,14 +226,14 @@ func (q *Queries) GetSessionPlaceGiveVenue(ctx context.Context, arg GetSessionPl
 	return &i, err
 }
 
-const getSessionPlaceGiveVenueFromSessionPlace = `-- name: GetSessionPlaceGiveVenueFromSessionPlace :one
+const getSessionPlaceGivenVenueFromSessionPlace = `-- name: GetSessionPlaceGivenVenueFromSessionPlace :one
 SELECT id, name, location, session_place_id, created_at, updated_at
 FROM session_places_given_venue
 WHERE session_place_id = $1
 `
 
-func (q *Queries) GetSessionPlaceGiveVenueFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesGivenVenue, error) {
-	row := q.db.QueryRowContext(ctx, getSessionPlaceGiveVenueFromSessionPlace, sessionPlaceID)
+func (q *Queries) GetSessionPlaceGivenVenueFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesGivenVenue, error) {
+	row := q.db.QueryRowContext(ctx, getSessionPlaceGivenVenueFromSessionPlace, sessionPlaceID)
 	var i models.SessionPlacesGivenVenue
 	err := row.Scan(
 		&i.ID,
@@ -320,6 +320,72 @@ WHERE session_place_id = $1
 
 func (q *Queries) GetSessionPlaceOnlineFromSessionPlace(ctx context.Context, sessionPlaceID uint64) (*models.SessionPlacesOnline, error) {
 	row := q.db.QueryRowContext(ctx, getSessionPlaceOnlineFromSessionPlace, sessionPlaceID)
+	var i models.SessionPlacesOnline
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Url,
+		&i.SessionPlaceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const updateSessionPlaceGivenVenue = `-- name: UpdateSessionGivenVenue :one
+UPDATE session_places_given_venue
+SET name = $3, location = $4
+WHERE id = $1 AND session_place_id = $2
+RETURNING id, name, location, session_place_id, created_at, updated_at
+`
+
+type UpdateSessionPlaceGivenVenueParams struct {
+	ID             uint64      `json:"id"`
+	SessionPlaceID uint64      `json:"session_place_id"`
+	Name           string      `json:"name"`
+	Location       interface{} `json:"location"`
+}
+
+func (q *Queries) UpdateSessionPlaceGivenVenue(ctx context.Context, arg UpdateSessionPlaceGivenVenueParams) (*models.SessionPlacesGivenVenue, error) {
+	row := q.db.QueryRowContext(ctx, updateSessionPlaceGivenVenue,
+		arg.ID,
+		arg.SessionPlaceID,
+		arg.Name,
+		arg.Location,
+	)
+	var i models.SessionPlacesGivenVenue
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Location,
+		&i.SessionPlaceID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
+const updateSessionPlaceOnline = `-- name: UpdateSessionPlaceOnline :one
+UPDATE session_places_online
+SET type = $3, url = $4
+WHERE id = $1 AND session_place_id = $2
+RETURNING id, type, url, session_place_id, created_at, updated_at
+`
+
+type UpdateSessionPlaceOnlineParams struct {
+	ID             uint64 `json:"id"`
+	SessionPlaceID uint64 `json:"session_place_id"`
+	Type           string `json:"type"`
+	Url            string `json:"url"`
+}
+
+func (q *Queries) UpdateSessionPlaceOnline(ctx context.Context, arg UpdateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error) {
+	row := q.db.QueryRowContext(ctx, updateSessionPlaceOnline,
+		arg.ID,
+		arg.SessionPlaceID,
+		arg.Type,
+		arg.Url,
+	)
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,

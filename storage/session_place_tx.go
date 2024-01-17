@@ -32,7 +32,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 				)
 			}
 		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
-			subSessionPlace, err = q.GetSessionPlaceGiveVenueFromSessionPlace(ctx, sessionPlace.ID)
+			subSessionPlace, err = q.GetSessionPlaceGivenVenueFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
