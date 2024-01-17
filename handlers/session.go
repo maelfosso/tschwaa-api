@@ -317,6 +317,7 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 
 type getPlaceOfSession interface {
 	GetSession(ctx context.Context, arg storage.GetSessionParams) (*models.Session, error)
+	GetSessionPlaceTx(ctx context.Context, sessionID uint64) (*models.ISessionPlace, error)
 }
 
 func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
@@ -325,11 +326,9 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 
 		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgID, _ := strconv.ParseUint(orgIdParam, 10, 64)
-		log.Println("Get Org ID", orgID)
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-		log.Println("Get Session ID x2: ", sessionID)
 
 		session, err := svc.GetSession(ctx, storage.GetSessionParams{
 			OrganizationID: orgID,
@@ -346,12 +345,16 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 			return
 		}
 
-		// 1- Get session place
-		// 2- According to the type of place => get the corresponding session place
+		iSessionPlace, err := svc.GetSessionPlaceTx(ctx, sessionID)
+		if err != nil {
+			log.Printf("error when getting real session place of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(true); err != nil {
+		if err := json.NewEncoder(w).Encode(iSessionPlace); err != nil {
 			log.Println("error when encoding all the organization")
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
