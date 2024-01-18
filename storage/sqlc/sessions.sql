@@ -53,6 +53,11 @@ DELETE
 FROM session_places_member_home
 WHERE id = $1;
 
+-- name: DeleteSessionPlace :exec
+DELETE
+FROM session_places
+WHERE id = $1 AND session_id = $2;
+
 -- name: UpdateSessionPlace :one
 UPDATE session_places
 SET type = $2

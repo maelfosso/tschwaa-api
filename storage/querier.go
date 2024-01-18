@@ -47,6 +47,7 @@ type Querier interface {
 	DeleteSessionPlaceGivenVenue(ctx context.Context, id uint64) error
 	DeleteSessionPlaceMemberHome(ctx context.Context, id uint64) error
 	DeleteSessionPlaceOnline(ctx context.Context, id uint64) error
+	DeleteSessionPlace(ctx context.Context, arg DeleteSessionPlaceParams) error
 	UpdateSessionPlace(ctx context.Context, arg UpdateSessionPlaceParams) (*models.SessionPlace, error)
 	GetSessionPlaceFromSession(ctx context.Context, sessionID uint64) (*models.SessionPlace, error)
 	GetSessionPlace(ctx context.Context, arg GetSessionPlaceParams) (*models.SessionPlace, error)

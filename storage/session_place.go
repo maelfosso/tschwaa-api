@@ -133,6 +133,22 @@ func (q *Queries) DeleteSessionPlaceOnline(ctx context.Context, id uint64) error
 	return err
 }
 
+const deleteSessionPlace = `-- name: DeleteSessionPlace :exec
+DELETE
+FROM session_places
+WHERE id = $1 AND session_id = $2
+`
+
+type DeleteSessionPlaceParams struct {
+	ID        uint64 `json:"id"`
+	SessionID uint64 `json:"session_id"`
+}
+
+func (q *Queries) DeleteSessionPlace(ctx context.Context, arg DeleteSessionPlaceParams) error {
+	_, err := q.db.ExecContext(ctx, deleteSessionPlace, arg.ID, arg.SessionID)
+	return err
+}
+
 const updateSessionPlace = `-- name: UpdateSessionPlace :one
 UPDATE session_places
 SET type = $2
