@@ -115,3 +115,73 @@ func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSes
 
 	return err
 }
+
+type CreateSessionPlaceTxParams struct {
+	SessionID        uint64
+	SessionPlaceType string
+
+	OnlineType *string
+	Url        *string
+
+	Name     *string
+	Location *string
+}
+
+func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSessionPlaceTxParams) (models.ISessionPlace, error) {
+	var iSessionPlace models.ISessionPlace
+
+	err := store.execTx(ctx, func(q *Queries) error {
+		sessionPlace, err := store.CreateSessionPlace(ctx, CreateSessionPlaceParams{
+			Type:      arg.SessionPlaceType,
+			SessionID: arg.SessionID,
+		})
+		if err != nil {
+			return utils.Fail(
+				"error when creating a session place",
+				"ERR_CRT_SES_01",
+				err,
+			)
+		}
+
+		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
+			iSessionPlace, err = store.CreateSessionPlaceOnline(ctx, CreateSessionPlaceOnlineParams{
+				SessionPlaceID: sessionPlace.ID,
+				Type:           *arg.OnlineType,
+				Url:            *arg.Url,
+			})
+			if err != nil {
+				return utils.Fail(
+					"error when creating online session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
+			iSessionPlace, err = store.CreateSessionPlaceGivenVenue(ctx, CreateSessionPlaceGivenVenueParams{
+				SessionPlaceID: sessionPlace.ID,
+				Name:           *arg.Name,
+				Location:       *arg.Location,
+			})
+			if err != nil {
+				return utils.Fail(
+					"error when creating online session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
+			iSessionPlace, err = store.CreateSessionPlaceMemberHome(ctx, sessionPlace.ID)
+			if err != nil {
+				return utils.Fail(
+					"error when creating online session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		}
+
+		return nil
+	})
+
+	return iSessionPlace, err
+}
