@@ -54,6 +54,7 @@ type SessionPlace struct {
 }
 
 type ISessionPlace interface {
+	GetID() uint64
 	GetSessionPlaceID() uint64
 	GetType() string
 	GetDetails() string
@@ -66,6 +67,10 @@ type SessionPlacesOnline struct {
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+func (place SessionPlacesOnline) GetID() uint64 {
+	return place.ID
 }
 
 func (place SessionPlacesOnline) GetSessionPlaceID() uint64 {
@@ -89,6 +94,10 @@ type SessionPlacesGivenVenue struct {
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
 }
 
+func (place SessionPlacesGivenVenue) GetID() uint64 {
+	return place.ID
+}
+
 func (place SessionPlacesGivenVenue) GetSessionPlaceID() uint64 {
 	return place.SessionPlaceID
 }
@@ -106,6 +115,10 @@ type SessionPlacesMemberHome struct {
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
 	UpdatedAt      *time.Time `json:"updated_at,omitempty"`
+}
+
+func (place SessionPlacesMemberHome) GetID() uint64 {
+	return place.ID
 }
 
 func (place SessionPlacesMemberHome) GetSessionPlaceID() uint64 {
