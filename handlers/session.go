@@ -522,6 +522,7 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 }
 
 type changePlaceOfSession interface {
+	ChangeSessionPlaceTx(ctx context.Context, arg storage.ChangeSessionPlaceParams) (models.ISessionPlace, error)
 }
 
 type ChangePlaceOfSessionRequest struct {
@@ -542,17 +543,36 @@ func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
 
-		// 0- check if a previous session place exists
-		// 		if so, delete it
-		//			- delete the sub session place
-		//			- delete the session place
-		//		Transaction
+		decoder := json.NewDecoder(r.Body)
 
-		// 1- According to the type of the new session place, create
-		//		- create the session place
-		//		- create the sub session place
-		//		Transaction
+		var inputs ChangePlaceOfSessionRequest
+		if err := decoder.Decode(&inputs); err != nil {
+			http.Error(w, "error when decoding the session json data", http.StatusBadRequest)
+			return
+		}
 
-		// The whole as a transaction
+		iSessionPlace, err := svc.ChangeSessionPlaceTx(ctx, storage.ChangeSessionPlaceParams{
+			SessionID:        sessionID,
+			SessionPlaceType: inputs.SessionPlaceType,
+
+			Type: &inputs.Type,
+			Url:  &inputs.Url,
+
+			Name:     &inputs.Name,
+			Location: &inputs.Location,
+		})
+		if err != nil {
+			log.Printf("error when completely changing a session place of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		if err := json.NewEncoder(w).Encode(iSessionPlace); err != nil {
+			log.Println("error when encoding all the organization")
+			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
+			return
+		}
 	})
 }
