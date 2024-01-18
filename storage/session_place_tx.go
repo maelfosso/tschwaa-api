@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	"tschwaa.com/api/common"
 	"tschwaa.com/api/models"
@@ -120,8 +121,8 @@ type CreateSessionPlaceTxParams struct {
 	SessionID        uint64
 	SessionPlaceType string
 
-	OnlineType *string
-	Url        *string
+	Type *string
+	Url  *string
 
 	Name     *string
 	Location *string
@@ -146,7 +147,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
 			iSessionPlace, err = store.CreateSessionPlaceOnline(ctx, CreateSessionPlaceOnlineParams{
 				SessionPlaceID: sessionPlace.ID,
-				Type:           *arg.OnlineType,
+				Type:           *arg.Type,
 				Url:            *arg.Url,
 			})
 			if err != nil {
@@ -178,6 +179,67 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 					err,
 				)
 			}
+		}
+
+		return nil
+	})
+
+	return iSessionPlace, err
+}
+
+type ChangeSessionPlaceParams struct {
+	SessionID        uint64
+	SessionPlaceType string
+
+	Type *string
+	Url  *string
+
+	Name     *string
+	Location *string
+}
+
+func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSessionPlaceParams) (models.ISessionPlace, error) {
+	var iSessionPlace models.ISessionPlace
+
+	err := store.execTx(ctx, func(q *Queries) error {
+		iSessionPlace, err := store.GetSessionPlaceTx(ctx, arg.SessionID)
+		if err != nil {
+			return utils.Fail(
+				fmt.Sprintf("error when getting full session place of session[%d]: %w", arg.SessionID, err),
+				"ERR_CRT_SES_01",
+				err,
+			)
+		}
+		if iSessionPlace != nil {
+			err := store.DeleteSessionPlaceTx(ctx, DeleteSessionPlaceTxParams{
+				ISessionPlace: iSessionPlace,
+				SessionID:     arg.SessionID,
+			})
+			if err != nil {
+				return utils.Fail(
+					fmt.Sprintf("error when completely deleting a session place of session[%d]: %w", arg.SessionID, err),
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		}
+
+		iSessionPlace, err = store.CreateSessionPlaceTx(ctx, CreateSessionPlaceTxParams{
+			SessionID:        arg.SessionID,
+			SessionPlaceType: arg.SessionPlaceType,
+
+			Type: arg.Type,
+			Url:  arg.Url,
+
+			Name:     arg.Name,
+			Location: arg.Location,
+		})
+		if err != nil {
+			return utils.Fail(
+				fmt.Sprintf("error when completely creating a session place of session[%d]: %w", arg.SessionID, err),
+				"ERR_CRT_SES_01",
+				err,
+			)
 		}
 
 		return nil
