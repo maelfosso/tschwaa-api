@@ -8,7 +8,7 @@ import (
 	"tschwaa.com/api/utils"
 )
 
-func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64) (*models.ISessionPlace, error) {
+func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64) (models.ISessionPlace, error) {
 	var subSessionPlace models.ISessionPlace
 
 	err := store.execTx(ctx, func(q *Queries) error {
@@ -31,6 +31,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 					err,
 				)
 			}
+			// TODO: check if subSessionPlace exists
 		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
 			subSessionPlace, err = q.GetSessionPlaceGivenVenueFromSessionPlace(ctx, sessionPlace.ID)
 
@@ -41,6 +42,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 					err,
 				)
 			}
+			// TODO: check if subSessionPlace exists
 		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
 			subSessionPlace, err = q.GetSessionPlaceMemberHomeFromSessionPlace(ctx, sessionPlace.ID)
 
@@ -51,12 +53,13 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 					err,
 				)
 			}
+			// TODO: check if subSessionPlace exists
 		}
 
 		return nil
 	})
 
-	return &subSessionPlace, err
+	return subSessionPlace, err
 }
 
 type DeleteSessionPlaceTxParams struct {
