@@ -63,16 +63,14 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 }
 
 type DeleteSessionPlaceTxParams struct {
-	SessionPlaceID    uint64
-	SessionID         uint64
-	SessionPlaceType  string
-	SubSessionPlaceID uint64
+	ISessionPlace models.ISessionPlace
+	SessionID     uint64
 }
 
 func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSessionPlaceTxParams) error {
 	err := store.execTx(ctx, func(q *Queries) error {
-		if arg.SessionPlaceType == common.SESSION_PLACE_ONLINE {
-			err := store.DeleteSessionPlaceOnline(ctx, arg.SubSessionPlaceID)
+		if arg.ISessionPlace.GetType() == common.SESSION_PLACE_ONLINE {
+			err := store.DeleteSessionPlaceOnline(ctx, arg.ISessionPlace.GetID())
 			if err != nil {
 				return utils.Fail(
 					"error when deleting online session place",
@@ -80,8 +78,8 @@ func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSes
 					err,
 				)
 			}
-		} else if arg.SessionPlaceType == common.SESSION_PLACE_GIVEN_VENUE {
-			err := store.DeleteSessionPlaceGivenVenue(ctx, arg.SubSessionPlaceID)
+		} else if arg.ISessionPlace.GetType() == common.SESSION_PLACE_GIVEN_VENUE {
+			err := store.DeleteSessionPlaceGivenVenue(ctx, arg.ISessionPlace.GetID())
 			if err != nil {
 				return utils.Fail(
 					"error when deleting given venue session place",
@@ -89,8 +87,8 @@ func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSes
 					err,
 				)
 			}
-		} else if arg.SessionPlaceType == common.SESSION_PLACE_MEMBER_HOME {
-			err := store.DeleteSessionPlaceMemberHome(ctx, arg.SubSessionPlaceID)
+		} else if arg.ISessionPlace.GetType() == common.SESSION_PLACE_MEMBER_HOME {
+			err := store.DeleteSessionPlaceMemberHome(ctx, arg.ISessionPlace.GetID())
 			if err != nil {
 				return utils.Fail(
 					"error when deleting member home session place",
@@ -101,7 +99,7 @@ func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSes
 		}
 
 		err := store.DeleteSessionPlace(ctx, DeleteSessionPlaceParams{
-			ID:        arg.SessionPlaceID,
+			ID:        arg.ISessionPlace.GetSessionPlaceID(),
 			SessionID: arg.SessionID,
 		})
 		if err != nil {
