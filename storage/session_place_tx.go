@@ -58,3 +58,59 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 
 	return &subSessionPlace, err
 }
+
+type DeleteSessionPlaceTxParams struct {
+	SessionPlaceID    uint64
+	SessionID         uint64
+	SessionPlaceType  string
+	SubSessionPlaceID uint64
+}
+
+func (store *SQLStorage) DeleteSessionPlaceTx(ctx context.Context, arg DeleteSessionPlaceTxParams) error {
+	err := store.execTx(ctx, func(q *Queries) error {
+		if arg.SessionPlaceType == common.SESSION_PLACE_ONLINE {
+			err := store.DeleteSessionPlaceOnline(ctx, arg.SubSessionPlaceID)
+			if err != nil {
+				return utils.Fail(
+					"error when deleting online session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		} else if arg.SessionPlaceType == common.SESSION_PLACE_GIVEN_VENUE {
+			err := store.DeleteSessionPlaceGivenVenue(ctx, arg.SubSessionPlaceID)
+			if err != nil {
+				return utils.Fail(
+					"error when deleting given venue session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		} else if arg.SessionPlaceType == common.SESSION_PLACE_MEMBER_HOME {
+			err := store.DeleteSessionPlaceMemberHome(ctx, arg.SubSessionPlaceID)
+			if err != nil {
+				return utils.Fail(
+					"error when deleting member home session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
+		}
+
+		err := store.DeleteSessionPlace(ctx, DeleteSessionPlaceParams{
+			ID:        arg.SessionPlaceID,
+			SessionID: arg.SessionID,
+		})
+		if err != nil {
+			return utils.Fail(
+				"error when deleting session place",
+				"ERR_CRT_SES_01",
+				err,
+			)
+		}
+
+		return nil
+	})
+
+	return err
+}

@@ -86,6 +86,7 @@ type QuerierTx interface {
 	CreateSessionTx(ctx context.Context, arg CreateSessionParams) (*models.Session, error)
 	// Session Place
 	GetSessionPlaceTx(ctx context.Context, sessionID uint64) (*models.ISessionPlace, error)
+	DeleteSessionPlaceTx(ctx context.Context, arg DeleteSessionPlaceTxParams) error
 	// Members of session
 	UpdateSessionMembersTx(ctx context.Context, arg UpdateSessionMembersParams) ([]*models.MembersOfSession, error)
 	// Membership
