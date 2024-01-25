@@ -8,7 +8,7 @@ import (
 )
 
 func GetCurrentMember(req *http.Request) *models.Member {
-	user := req.Context().Value(services.JwtMemberKey)
+	user := req.Context().Value(services.JWTMemberKey)
 	if user == nil {
 		return nil
 	}

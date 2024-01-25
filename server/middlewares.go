@@ -31,14 +31,14 @@ func (s *Server) requestLoggerMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (s *Server) convertJwtTokenToMember(next http.Handler) http.Handler {
+func (s *Server) convertJWTTokenToMember(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		ctx := req.Context()
 
-		claims := ctx.Value(services.JwtClaimsKey)
+		claims := ctx.Value(services.JWTClaimsKey)
 		log.Println("convert jwt token to member : ", claims)
 		if claims == nil {
-			ctx = context.WithValue(ctx, services.JwtMemberKey, nil)
+			ctx = context.WithValue(ctx, services.JWTMemberKey, nil)
 			next.ServeHTTP(w, req.WithContext(ctx))
 			return
 		}
@@ -53,10 +53,10 @@ func (s *Server) convertJwtTokenToMember(next http.Handler) http.Handler {
 
 		s.log.Info(
 			"Current Member",
-			zap.Any("Jwt user", user),
+			zap.Any("JWT user", user),
 		)
 
-		ctx = context.WithValue(ctx, services.JwtMemberKey, user)
+		ctx = context.WithValue(ctx, services.JWTMemberKey, user)
 		next.ServeHTTP(w, req.WithContext(ctx))
 	})
 }

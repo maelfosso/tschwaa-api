@@ -318,7 +318,7 @@ func RemoveMemberFromSession(mux chi.Router, s removeMemberFromSession) {
 
 type getPlaceOfSession interface {
 	GetSession(ctx context.Context, arg storage.GetSessionParams) (*models.Session, error)
-	GetSessionPlaceTx(ctx context.Context, sessionID uint64) (*models.ISessionPlace, error)
+	GetSessionPlaceTx(ctx context.Context, sessionID uint64) (models.ISessionPlace, error)
 }
 
 func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
