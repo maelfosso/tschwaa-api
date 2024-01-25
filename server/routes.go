@@ -32,20 +32,23 @@ func (s *Server) setupRoutes() {
 	s.mux.Use(s.requestLoggerMiddleware)
 
 	s.mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // http://localhost:3000", "http://www.tschwaa.local"},
+		AllowedOrigins:   []string{"http://localhost:3000", "http://www.tschwaa.local"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300,
 	}))
 
 	s.mux.Use(services.Verifier)
 	s.mux.Use(services.ParseJWTToken)
 
+	// Protected Routes
 	s.mux.Group(func(r chi.Router) {
 		r.Use(services.Authenticator)
-		r.Use(s.convertJwtTokenToMember)
+		r.Use(s.convertJWTTokenToMember)
+
+		handlers.GetCurrentUser(r)
 
 		// Organization
 		r.Route("/orgs", func(r chi.Router) {
@@ -83,14 +86,15 @@ func (s *Server) setupRoutes() {
 		})
 	})
 
+	// Public Route
 	s.mux.Group(func(r chi.Router) {
-		r.Use(s.convertJwtTokenToMember)
+		r.Use(s.convertJWTTokenToMember)
 
 		handlers.Health(s.mux)
 
 		r.Route("/auth/", func(r chi.Router) {
-			handlers.Signup(r, s.database.Storage)
-			handlers.Signin(r, s.database.Storage)
+			handlers.SignUp(r, s.database.Storage)
+			handlers.SignIn(r, s.database.Storage)
 			handlers.GetOtp(r, s.database.Storage)
 			handlers.CheckOtp(r, s.database.Storage)
 			handlers.ResendOtp(r, s.database.Storage)
