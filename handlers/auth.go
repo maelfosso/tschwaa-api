@@ -35,14 +35,14 @@ type SignInInputs struct {
 }
 
 type SignInResult struct {
-	ID    uint64 `json:"id,omitempty"`
-	Name  string `json:"name",omitempty`
-	Email string `json:"email",omitempty`
-	Phone string `json:"phone,omitempty"`
-	Token string `json:"access_token",omitempty`
+	ID    uint64  `json:"id,omitempty"`
+	Name  string  `json:"name",omitempty`
+	Email string  `json:"email",omitempty`
+	Phone string  `json:"phone,omitempty"`
+	Token *string `json:"access_token",omitempty`
 }
 
-type JwtClaims struct {
+type JWTClaims struct {
 	User models.Member
 	jwt.StandardClaims
 }
@@ -65,8 +65,8 @@ func createSecret() (string, error) {
 	return fmt.Sprintf("%x", secret), nil
 }
 
-func Signup(mux chi.Router, s authWeb) {
-	mux.Post("/signup", func(w http.ResponseWriter, r *http.Request) {
+func SignUp(mux chi.Router, s authWeb) {
+	mux.Post("/sign-up", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
 		decoder := json.NewDecoder(r.Body)
@@ -112,11 +112,11 @@ func Signup(mux chi.Router, s authWeb) {
 	})
 }
 
-func Signin(mux chi.Router, s authWeb) {
-	mux.Post("/signin", func(w http.ResponseWriter, r *http.Request) {
+func SignIn(mux chi.Router, s authWeb) {
+	mux.Post("/sign-in", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
-		log.Println("into /signin")
+		log.Println("into /sign-in")
 
 		decoder := json.NewDecoder(r.Body)
 
@@ -164,7 +164,20 @@ func Signin(mux chi.Router, s authWeb) {
 			return
 		}
 
-		signInResult.Token = tokenString
+		signInResult.Token = nil
+		http.SetCookie(
+			w,
+			&http.Cookie{
+				Name:     "jwt",
+				Value:    tokenString,
+				Path:     "/",
+				Expires:  time.Now().Add(1 * time.Hour),
+				HttpOnly: true,
+				Secure:   true,
+				MaxAge:   3600,
+				SameSite: http.SameSiteLaxMode,
+			},
+		)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
@@ -314,7 +327,20 @@ func CheckOtp(mux chi.Router, a authMobile) {
 			return
 		}
 
-		signInResult.Token = tokenString
+		signInResult.Token = nil // tokenString
+		http.SetCookie(
+			w,
+			&http.Cookie{
+				Name:     "jwt",
+				Value:    tokenString,
+				Path:     "/",
+				Expires:  time.Now().Add(1 * time.Hour),
+				HttpOnly: true,
+				Secure:   true,
+				MaxAge:   3600,
+				SameSite: http.SameSiteLaxMode,
+			},
+		)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
