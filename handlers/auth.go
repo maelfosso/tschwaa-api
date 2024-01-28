@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"crypto/rand"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -56,15 +55,6 @@ type authWeb interface {
 	GetMemberByID(ctx context.Context, id uint64) (*models.Member, error)
 }
 
-func createSecret() (string, error) {
-	secret := make([]byte, 32)
-	if _, err := rand.Read(secret); err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", secret), nil
-}
-
 func SignUp(mux chi.Router, s authWeb) {
 	mux.Post("/sign-up", func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
@@ -82,7 +72,7 @@ func SignUp(mux chi.Router, s authWeb) {
 		existingMember, err := s.GetMemberByUsername(ctx, storage.GetMemberByUsernameParams{
 			Phone: inputs.Phone,
 			Email: inputs.Email,
-		}) // user.Phone, user.Email)
+		})
 		if err != nil || existingMember != nil {
 			err := fmt.Errorf("member with the email/phone already exists: %w", err)
 			log.Println("Error GetMemberByUsername", zap.Error(err))
@@ -96,6 +86,7 @@ func SignUp(mux chi.Router, s authWeb) {
 			Sex:       inputs.Sex,
 			Email:     inputs.Email,
 			Phone:     inputs.Phone,
+			Password:  inputs.Password,
 		})
 		if err != nil {
 			log.Println("Error CreateMemberWithAssociatedUserTx: ", err)
@@ -137,7 +128,7 @@ func SignIn(mux chi.Router, s authWeb) {
 			return
 		}
 
-		if helpers.IsPasswordMatched(credentials.Password, existingUser.Password) {
+		if !helpers.IsPasswordMatched(existingUser.Password, credentials.Password) {
 			err = fmt.Errorf("the password is not correct: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
 			http.Error(w, err.Error(), http.StatusBadRequest)

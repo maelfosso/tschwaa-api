@@ -26,9 +26,9 @@ func CreateSecret() (string, error) {
 	return fmt.Sprintf("%x", secret), nil
 }
 
-func IsPasswordMatched(currentPassword, password string) bool {
+func IsPasswordMatched(hashedPassword, password string) bool {
 	err := bcrypt.CompareHashAndPassword(
-		[]byte(currentPassword),
+		[]byte(hashedPassword),
 		[]byte(password),
 	)
 	return err == nil
