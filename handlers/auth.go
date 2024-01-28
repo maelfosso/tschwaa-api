@@ -124,14 +124,14 @@ func SignIn(mux chi.Router, s authWeb) {
 		if err != nil || existingUser == nil {
 			err = fmt.Errorf("user with that username does not exist: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "user with that username does not exist", http.StatusBadRequest)
 			return
 		}
 
 		if !helpers.IsPasswordMatched(existingUser.Password, credentials.Password) {
 			err = fmt.Errorf("the password is not correct: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "the password is not correct", http.StatusBadRequest)
 			return
 		}
 
@@ -139,7 +139,7 @@ func SignIn(mux chi.Router, s authWeb) {
 		if err != nil || existingMember == nil {
 			err = fmt.Errorf("member related to the user does not exist: %w", err)
 			log.Println("Error CreateUser", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "member related to the user does not exist", http.StatusBadRequest)
 			return
 		}
 
@@ -151,7 +151,7 @@ func SignIn(mux chi.Router, s authWeb) {
 		tokenString, err := services.GenerateJWTToken(structs.Map(&signInResult))
 		if err != nil {
 			log.Println("Error CreateUser", zap.Error(err))
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "error when creating token", http.StatusBadRequest)
 			return
 		}
 
@@ -173,7 +173,7 @@ func SignIn(mux chi.Router, s authWeb) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(signInResult); err != nil {
-			http.Error(w, "error enconding the result", http.StatusBadRequest)
+			http.Error(w, "error encoding the result", http.StatusBadRequest)
 			return
 		}
 	})
