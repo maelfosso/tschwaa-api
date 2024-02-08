@@ -32,7 +32,7 @@ func (s *Server) setupRoutes() {
 	s.mux.Use(s.requestLoggerMiddleware)
 
 	s.mux.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000", "http://www.tschwaa.local"},
+		AllowedOrigins:   []string{"http://localhost:5173", "http://www.tschwaa.local"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
