@@ -10,7 +10,7 @@ import (
 )
 
 func (store *SQLStorage) CreateOrganizationWithMembershipTx(ctx context.Context, arg CreateOrganizationParams) (*models.Organization, error) {
-	var org models.Organization
+	var result *models.Organization
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		org, err := q.CreateOrganization(ctx, arg)
@@ -19,6 +19,7 @@ func (store *SQLStorage) CreateOrganizationWithMembershipTx(ctx context.Context,
 				fmt.Sprintf("error when creating organizatioin %s", arg.Name),
 				"ERR_CRT_ORG_MBRSHP_01", err)
 		}
+		result = org
 
 		_, err = q.CreateMembership(ctx, CreateMembershipParams{
 			MemberID:       *arg.CreatedBy,
@@ -31,5 +32,5 @@ func (store *SQLStorage) CreateOrganizationWithMembershipTx(ctx context.Context,
 			"ERR_CRT_ORG_MBRSHP_02", err)
 	})
 
-	return &org, err
+	return result, err
 }
