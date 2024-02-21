@@ -24,6 +24,7 @@ type listOrg interface {
 
 type getOrg interface {
 	GetOrganization(ctx context.Context, id uint64) (*models.Organization, error)
+	GetCurrentSession(ctx context.Context, organizationID uint64) (*models.Session, error)
 }
 
 type CreateOrganizationRequest struct {
@@ -33,6 +34,8 @@ type CreateOrganizationRequest struct {
 
 func CreateOrganization(mux chi.Router, o createOrg) {
 	mux.Post("/", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		decoder := json.NewDecoder(r.Body)
 
 		var inputs CreateOrganizationRequest
@@ -43,7 +46,7 @@ func CreateOrganization(mux chi.Router, o createOrg) {
 
 		currentMember := GetCurrentMember(r)
 
-		org, err := o.CreateOrganizationWithMembershipTx(r.Context(), storage.CreateOrganizationParams{
+		org, err := o.CreateOrganizationWithMembershipTx(ctx, storage.CreateOrganizationParams{
 			Name:        inputs.Name,
 			Description: &inputs.Description,
 			CreatedBy:   &currentMember.ID,
@@ -64,10 +67,11 @@ func CreateOrganization(mux chi.Router, o createOrg) {
 
 func ListOrganizations(mux chi.Router, o listOrg) {
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
 
 		fmt.Println("JWT Claims - ", GetCurrentMember(r))
 		currentMember := GetCurrentMember(r)
-		orgs, err := o.ListOrganizationOfMember(r.Context(), currentMember.ID)
+		orgs, err := o.ListOrganizationOfMember(ctx, currentMember.ID)
 		if err != nil {
 			http.Error(w, "error occured when fetching the organizations", http.StatusBadRequest)
 			return
@@ -82,13 +86,20 @@ func ListOrganizations(mux chi.Router, o listOrg) {
 	})
 }
 
+type GetOrganizationResponse struct {
+	Organization   *models.Organization `json:"organization"`
+	CurrentSession *models.Session      `json:"current_session"`
+}
+
 func GetOrganization(mux chi.Router, o getOrg) {
 	mux.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		orgIdParam := chi.URLParamFromCtx(r.Context(), "orgID")
+		ctx := r.Context()
+
+		orgIdParam := chi.URLParamFromCtx(ctx, "orgID")
 		orgId, _ := strconv.ParseUint(orgIdParam, 10, 64)
 		log.Println("Get Org ID: ", orgId)
 
-		org, err := o.GetOrganization(r.Context(), orgId)
+		org, err := o.GetOrganization(ctx, orgId)
 		log.Println("Get Organization ", org, err)
 		if err != nil {
 			if err == sql.ErrNoRows {
@@ -100,34 +111,16 @@ func GetOrganization(mux chi.Router, o getOrg) {
 			}
 		}
 
+		currentSession, err := o.GetCurrentSession(ctx, org.ID)
+		response := GetOrganizationResponse{
+			Organization:   org,
+			CurrentSession: currentSession,
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(org); err != nil {
+		if err := json.NewEncoder(w).Encode(response); err != nil {
 			http.Error(w, "error when encoding all the organization", http.StatusBadRequest)
 			return
 		}
 	})
 }
-
-// func ArticleCtx(next http.Handler) http.Handler {
-//   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-//     articleID := chi.URLParam(r, "articleID")
-//     article, err := dbGetArticle(articleID)
-//     if err != nil {
-//       http.Error(w, http.StatusText(404), 404)
-//       return
-//     }
-//     ctx := context.WithValue(r.Context(), "article", article)
-//     next.ServeHTTP(w, r.WithContext(ctx))
-//   })
-// }
-
-// func getArticle(w http.ResponseWriter, r *http.Request) {
-//   ctx := r.Context()
-//   article, ok := ctx.Value("article").(*Article)
-//   if !ok {
-//     http.Error(w, http.StatusText(422), 422)
-//     return
-//   }
-//   w.Write([]byte(fmt.Sprintf("title:%s", article.Title)))
-// }
