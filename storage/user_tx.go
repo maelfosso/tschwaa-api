@@ -85,7 +85,7 @@ func (store *SQLStorage) CreateMemberWithAssociatedUserTx(ctx context.Context, a
 		user, err := q.CreateUser(ctx, CreateUserParams{
 			Phone:    arg.Phone,
 			Email:    arg.Email,
-			Password: arg.Password,
+			Password: hashedPassword,
 			Token:    token,
 			MemberID: newMember.ID,
 		})
