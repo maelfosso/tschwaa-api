@@ -126,6 +126,9 @@ func sendMessageTextFromTemplate(to, template, language, components string) (*Wh
 
 	log.Println("client: response body: %s", string(resBody))
 
+	if res.StatusCode >= 300 {
+		return nil, fmt.Errorf(string(resBody))
+	}
 	var data WhatsappSendMessageResponse
 	err = json.Unmarshal(resBody, &data)
 	if err != nil {
