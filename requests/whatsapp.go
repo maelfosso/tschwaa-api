@@ -126,8 +126,16 @@ func sendMessageTextFromTemplate(to, template, language, components string) (*Wh
 
 	log.Println("client: response body: %s", string(resBody))
 
-	if res.StatusCode >= 300 {
-		return nil, fmt.Errorf(string(resBody))
+	if res.StatusCode != http.StatusOK {
+		log.Println("\nError: \n\n", string(resBody))
+
+		var errData WhatsappSendMessageErrorResponse
+		err = json.Unmarshal(resBody, &errData)
+		if err != nil {
+			return nil, utils.Fail("error when unmarshelling response body error", "ERR_SMSG_TPL_04", err)
+		}
+
+		return nil, fmt.Errorf("Unbable to send whatsapp message")
 	}
 	var data WhatsappSendMessageResponse
 	err = json.Unmarshal(resBody, &data)
