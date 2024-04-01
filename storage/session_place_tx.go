@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 
 	"tschwaa.com/api/common"
 	"tschwaa.com/api/models"
@@ -14,12 +16,17 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		sessionPlace, err := q.GetSessionPlaceFromSession(ctx, sessionID)
+		log.Println("sessionPlace: ", sessionPlace)
 		if err != nil {
-			return utils.Fail(
-				"error when getting session place",
-				"ERR_CRT_SES_01",
-				err,
-			)
+			if err == sql.ErrNoRows {
+				return nil
+			} else {
+				return utils.Fail(
+					"error when getting session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
 		}
 
 		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
@@ -122,16 +129,20 @@ type CreateSessionPlaceTxParams struct {
 	SessionPlaceType string
 
 	Type *string
-	Url  *string
+
+	Link *string
 
 	Name     *string
 	Location *string
+
+	Choice *string
 }
 
 func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSessionPlaceTxParams) (models.ISessionPlace, error) {
 	var iSessionPlace models.ISessionPlace
 
 	err := store.execTx(ctx, func(q *Queries) error {
+		log.Println("Type - SessionId: ", arg.SessionPlaceType, arg.SessionID)
 		sessionPlace, err := store.CreateSessionPlace(ctx, CreateSessionPlaceParams{
 			Type:      arg.SessionPlaceType,
 			SessionID: arg.SessionID,
@@ -148,7 +159,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 			iSessionPlace, err = store.CreateSessionPlaceOnline(ctx, CreateSessionPlaceOnlineParams{
 				SessionPlaceID: sessionPlace.ID,
 				Type:           *arg.Type,
-				Url:            *arg.Url,
+				Link:           *arg.Link,
 			})
 			if err != nil {
 				return utils.Fail(
@@ -192,7 +203,7 @@ type ChangeSessionPlaceParams struct {
 	SessionPlaceType string
 
 	Type *string
-	Url  *string
+	Link *string
 
 	Name     *string
 	Location *string
@@ -203,6 +214,10 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		iSessionPlace, err := store.GetSessionPlaceTx(ctx, arg.SessionID)
+		log.Println("GetSessionPlaceTx")
+		log.Println("iSessionPlace : ", iSessionPlace)
+		log.Println("err: ", err)
+		log.Println(iSessionPlace != nil, utils.CheckNilInterface(iSessionPlace))
 		if err != nil {
 			return utils.Fail(
 				fmt.Sprintf("error when getting full session place of session[%d]: %w", arg.SessionID, err),
@@ -210,7 +225,8 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 				err,
 			)
 		}
-		if iSessionPlace != nil {
+		if !utils.CheckNilInterface(iSessionPlace) {
+			log.Println("DeleteSessionPlaceTx")
 			err := store.DeleteSessionPlaceTx(ctx, DeleteSessionPlaceTxParams{
 				ISessionPlace: iSessionPlace,
 				SessionID:     arg.SessionID,
@@ -224,12 +240,13 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 			}
 		}
 
+		log.Println("CreateSessionPlaceTx")
 		iSessionPlace, err = store.CreateSessionPlaceTx(ctx, CreateSessionPlaceTxParams{
 			SessionID:        arg.SessionID,
 			SessionPlaceType: arg.SessionPlaceType,
 
 			Type: arg.Type,
-			Url:  arg.Url,
+			Link: arg.Link,
 
 			Name:     arg.Name,
 			Location: arg.Location,

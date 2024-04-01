@@ -330,11 +330,12 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-
+		log.Println("orgId - sessionId: ", orgID, sessionID)
 		session, err := svc.GetSession(ctx, storage.GetSessionParams{
 			OrganizationID: orgID,
 			SessionID:      sessionID,
 		})
+		log.Println("session: ", session)
 		if err != nil {
 			log.Printf("error when listing all members of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
@@ -352,7 +353,7 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
 		}
-
+		log.Println("iSessionPlace: ", iSessionPlace)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(iSessionPlace); err != nil {
@@ -375,7 +376,7 @@ type updatePlaceOfSession interface {
 type UpdatePlaceOfSessionRequest struct {
 	ID       uint64 `json:"id"`
 	Type     string `json:"type,omitempty"`
-	Url      string `json:"url,omitempty"`
+	Link     string `json:"Link,omitempty"`
 	Name     string `json:"name,omitempty"`
 	Location string `json:"location,omitempty"`
 }
@@ -442,7 +443,7 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 				ID:             sessionPlaceOnline.ID,
 				SessionPlaceID: sessionPlaceID,
 				Type:           inputs.Type,
-				Url:            inputs.Url,
+				Link:           inputs.Link,
 			})
 			if err != nil {
 				log.Printf(
@@ -526,11 +527,18 @@ type changePlaceOfSession interface {
 }
 
 type ChangePlaceOfSessionRequest struct {
-	SessionPlaceType string `json:"session_place_type"`
-	Type             string `json:"type,omitempty"`
-	Url              string `json:"url,omitempty"`
-	Name             string `json:"name,omitempty"`
-	Location         string `json:"location,omitempty"`
+	SessionPlaceType string `json:"place_type,omitempty"`
+
+	// Online
+	Type string `json:"type,omitempty"`
+	Link string `json:"link,omitempty"`
+
+	// Given Venue
+	Name     string `json:"name,omitempty"`
+	Location string `json:"location,omitempty"`
+
+	// Member Home
+	Choice string `json:"choice,omitempty"`
 }
 
 func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
@@ -542,7 +550,7 @@ func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-
+		log.Println("OrgId, sessionId: ", orgID, sessionID)
 		decoder := json.NewDecoder(r.Body)
 
 		var inputs ChangePlaceOfSessionRequest
@@ -550,16 +558,22 @@ func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
 			http.Error(w, "error when decoding the session json data", http.StatusBadRequest)
 			return
 		}
+		log.Println("ChangePoSRequest: ", inputs.SessionPlaceType)
+		log.Println(inputs.Type, inputs.Link)
+		log.Println(inputs.Name, inputs.Location)
+		log.Println(inputs.Choice)
 
 		iSessionPlace, err := svc.ChangeSessionPlaceTx(ctx, storage.ChangeSessionPlaceParams{
 			SessionID:        sessionID,
 			SessionPlaceType: inputs.SessionPlaceType,
 
 			Type: &inputs.Type,
-			Url:  &inputs.Url,
+			Link: &inputs.Link,
 
 			Name:     &inputs.Name,
 			Location: &inputs.Location,
+
+			// Choice: &inputs.Choice,
 		})
 		if err != nil {
 			log.Printf("error when completely changing a session place of session[%d] of the organization[%d]: %w", sessionID, orgID, err)

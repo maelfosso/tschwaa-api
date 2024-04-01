@@ -3,7 +3,7 @@ CREATE TYPE SessionPlacesOnlineType AS ENUM('telegram', 'whatsapp', 'google_meet
 CREATE TABLE IF NOT EXISTS session_places_online (
   id INTEGER GENERATED ALWAYS AS IDENTITY,
   type SessionPlacesOnlineType,
-  url TEXT NOT NULL,
+  link TEXT NOT NULL,
   session_place_id INTEGER NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
