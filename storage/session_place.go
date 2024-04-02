@@ -23,7 +23,7 @@ func (q *Queries) CreateSessionPlace(ctx context.Context, arg CreateSessionPlace
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -167,7 +167,7 @@ func (q *Queries) UpdateSessionPlace(ctx context.Context, arg UpdateSessionPlace
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -186,7 +186,7 @@ func (q *Queries) GetSessionPlaceFromSession(ctx context.Context, sessionID uint
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -214,7 +214,7 @@ func (q *Queries) GetSessionPlace(ctx context.Context, arg GetSessionPlaceParams
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,

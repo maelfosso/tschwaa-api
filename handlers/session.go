@@ -330,12 +330,11 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 
 		sessionIdParam := chi.URLParamFromCtx(ctx, "sessionID")
 		sessionID, _ := strconv.ParseUint(sessionIdParam, 10, 64)
-		log.Println("orgId - sessionId: ", orgID, sessionID)
+
 		session, err := svc.GetSession(ctx, storage.GetSessionParams{
 			OrganizationID: orgID,
 			SessionID:      sessionID,
 		})
-		log.Println("session: ", session)
 		if err != nil {
 			log.Printf("error when listing all members of session[%d] of the organization[%d]: %w", sessionID, orgID, err)
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
@@ -353,7 +352,7 @@ func GetPlaceOfSession(mux chi.Router, svc getPlaceOfSession) {
 			http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 			return
 		}
-		log.Println("iSessionPlace: ", iSessionPlace)
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		if err := json.NewEncoder(w).Encode(iSessionPlace); err != nil {
@@ -417,7 +416,7 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 			return
 		}
 
-		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
+		if sessionPlace.PlaceType == common.SESSION_PLACE_ONLINE {
 			sessionPlaceOnline, err := svc.GetSessionPlaceOnline(ctx, storage.GetSessionPlaceOnlineParams{
 				ID:             inputs.ID,
 				SessionPlaceID: sessionPlaceID,
@@ -453,7 +452,7 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 				return
 			}
-		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_GIVEN_VENUE {
 			sessionPlaceGivenVenue, err := svc.GetSessionPlaceGivenVenue(ctx, storage.GetSessionPlaceGivenVenueParams{
 				ID:             inputs.ID,
 				SessionPlaceID: sessionPlaceID,
@@ -489,7 +488,7 @@ func UpdatePlaceOfSession(mux chi.Router, svc updatePlaceOfSession) {
 				http.Error(w, "ERR_ADD_MBSHIP_SESS_105", http.StatusBadRequest)
 				return
 			}
-		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_MEMBER_HOME {
 			sessionPlaceMemberHone, err := svc.GetSessionPlaceMemberHome(ctx, storage.GetSessionPlaceMemberHomeParams{
 				ID:             inputs.ID,
 				SessionPlaceID: sessionPlaceID,

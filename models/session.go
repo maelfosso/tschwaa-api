@@ -47,7 +47,7 @@ type MembersOfSession struct {
 
 type SessionPlace struct {
 	ID        uint64     `json:"id"`
-	Type      string     `json:"type"`
+	PlaceType string     `json:"place_type"`
 	SessionID uint64     `json:"session_id"`
 	CreatedAt *time.Time `json:"created_at,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
@@ -61,6 +61,8 @@ type ISessionPlace interface {
 }
 
 type SessionPlacesOnline struct {
+	*SessionPlace
+
 	ID             uint64     `json:"id"`
 	Type           string     `json:"type"`
 	Link           string     `json:"Link"`
@@ -86,6 +88,8 @@ func (place SessionPlacesOnline) GetDetails() string {
 }
 
 type SessionPlacesGivenVenue struct {
+	*SessionPlace
+
 	ID             uint64     `json:"id"`
 	Name           string     `json:"name"`
 	Location       string     `json:"location"`
@@ -111,6 +115,8 @@ func (place SessionPlacesGivenVenue) GetDetails() string {
 }
 
 type SessionPlacesMemberHome struct {
+	*SessionPlace
+
 	ID             uint64     `json:"id"`
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
