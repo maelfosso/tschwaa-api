@@ -56,7 +56,7 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 					SessionPlaceID: sessionPlace.ID,
 
 					ID:        _subSessionPlace.ID,
-					Type:      _subSessionPlace.Type,
+					Platform:  _subSessionPlace.Platform,
 					Link:      _subSessionPlace.Link,
 					CreatedAt: _subSessionPlace.CreatedAt,
 					UpdatedAt: _subSessionPlace.UpdatedAt,
@@ -186,9 +186,8 @@ type CreateSessionPlaceTxParams struct {
 	SessionID        uint64
 	SessionPlaceType string
 
-	Type *string
-
-	Link *string
+	Platform *string
+	Link     *string
 
 	Name     *string
 	Location *string
@@ -200,7 +199,6 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 	var iSessionPlace models.ISessionPlace
 
 	err := store.execTx(ctx, func(q *Queries) error {
-		log.Println("Type - SessionId: ", arg.SessionPlaceType, arg.SessionID)
 		sessionPlace, err := store.CreateSessionPlace(ctx, CreateSessionPlaceParams{
 			Type:      arg.SessionPlaceType,
 			SessionID: arg.SessionID,
@@ -216,7 +214,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 		if sessionPlace.PlaceType == common.SESSION_PLACE_ONLINE {
 			iSessionPlace, err = store.CreateSessionPlaceOnline(ctx, CreateSessionPlaceOnlineParams{
 				SessionPlaceID: sessionPlace.ID,
-				Type:           *arg.Type,
+				Type:           *arg.Platform,
 				Link:           *arg.Link,
 			})
 			if err != nil {
@@ -234,7 +232,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 			})
 			if err != nil {
 				return utils.Fail(
-					"error when creating online session place",
+					"error when creating given venue session place",
 					"ERR_CRT_SES_01",
 					err,
 				)
@@ -243,7 +241,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 			iSessionPlace, err = store.CreateSessionPlaceMemberHome(ctx, sessionPlace.ID)
 			if err != nil {
 				return utils.Fail(
-					"error when creating online session place",
+					"error when creating member home session place",
 					"ERR_CRT_SES_01",
 					err,
 				)
@@ -260,8 +258,8 @@ type ChangeSessionPlaceParams struct {
 	SessionID        uint64
 	SessionPlaceType string
 
-	Type *string
-	Link *string
+	Platform *string
+	Link     *string
 
 	Name     *string
 	Location *string
@@ -303,8 +301,8 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 			SessionID:        arg.SessionID,
 			SessionPlaceType: arg.SessionPlaceType,
 
-			Type: arg.Type,
-			Link: arg.Link,
+			Platform: arg.Platform,
+			Link:     arg.Link,
 
 			Name:     arg.Name,
 			Location: arg.Location,

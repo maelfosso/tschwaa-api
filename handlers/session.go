@@ -529,8 +529,8 @@ type ChangePlaceOfSessionRequest struct {
 	SessionPlaceType string `json:"place_type,omitempty"`
 
 	// Online
-	Type string `json:"type,omitempty"`
-	Link string `json:"link,omitempty"`
+	Platform string `json:"platform,omitempty"`
+	Link     string `json:"link,omitempty"`
 
 	// Given Venue
 	Name     string `json:"name,omitempty"`
@@ -558,7 +558,7 @@ func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
 			return
 		}
 		log.Println("ChangePoSRequest: ", inputs.SessionPlaceType)
-		log.Println(inputs.Type, inputs.Link)
+		log.Println(inputs.Platform, inputs.Link)
 		log.Println(inputs.Name, inputs.Location)
 		log.Println(inputs.Choice)
 
@@ -566,8 +566,8 @@ func ChangePlaceOfSession(mux chi.Router, svc changePlaceOfSession) {
 			SessionID:        sessionID,
 			SessionPlaceType: inputs.SessionPlaceType,
 
-			Type: &inputs.Type,
-			Link: &inputs.Link,
+			Platform: &inputs.Platform,
+			Link:     &inputs.Link,
 
 			Name:     &inputs.Name,
 			Location: &inputs.Location,

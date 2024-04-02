@@ -64,7 +64,7 @@ type SessionPlacesOnline struct {
 	*SessionPlace
 
 	ID             uint64     `json:"id"`
-	Type           string     `json:"type"`
+	Platform       string     `json:"platform"`
 	Link           string     `json:"Link"`
 	SessionPlaceID uint64     `json:"session_place_id"`
 	CreatedAt      *time.Time `json:"created_at,omitempty"`
@@ -84,7 +84,7 @@ func (place SessionPlacesOnline) GetType() string {
 }
 
 func (place SessionPlacesOnline) GetDetails() string {
-	return fmt.Sprintf("%s (%s)", place.Type, place.Link)
+	return fmt.Sprintf("%s (%s)", place.Platform, place.Link)
 }
 
 type SessionPlacesGivenVenue struct {
