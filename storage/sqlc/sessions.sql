@@ -24,7 +24,7 @@ VALUES ($1, $2)
 RETURNING *;
 
 -- name: CreateSessionPlaceOnline :one
-INSERT INTO session_places_online(type, url, session_place_id)
+INSERT INTO session_places_online(type, link, session_place_id)
 VALUES ($1, $2, $3)
 RETURNING *;
 
@@ -106,7 +106,7 @@ WHERE id = $1 AND session_place_id = $2;
 
 -- name: UpdateSessionPlaceOnline :one
 UPDATE session_places_online
-SET type = $3, url = $4
+SET type = $3, link = $4
 WHERE id = $1 AND session_place_id = $2
 RETURNING *;
 

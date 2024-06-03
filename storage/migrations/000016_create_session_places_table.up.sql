@@ -2,7 +2,7 @@ CREATE TYPE SessionPlacesType AS ENUM('online', 'given_venue', 'member_home');
 
 CREATE TABLE IF NOT EXISTS session_places (
   id INTEGER GENERATED ALWAYS AS IDENTITY,
-  type SessionPlacesType,
+  place_type SessionPlacesType,
   session_id INTEGER NOT NULL,
 
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),

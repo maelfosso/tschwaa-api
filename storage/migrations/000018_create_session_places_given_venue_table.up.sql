@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS session_places_given_venue (
 
   PRIMARY KEY (id),
   CONSTRAINT fk_session_place_given_venue_session_places_session_place_id
-    FOREIGN KEY (session_place_id) REFERENCES sessions(id)
+    FOREIGN KEY (session_place_id) REFERENCES session_places(id)
     ON DELETE CASCADE
     ON UPDATE CASCADE
 );

@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 
 	"tschwaa.com/api/models"
 )
@@ -22,7 +23,7 @@ func (q *Queries) CreateSessionPlace(ctx context.Context, arg CreateSessionPlace
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -75,24 +76,24 @@ func (q *Queries) CreateSessionPlaceMemberHome(ctx context.Context, sessionPlace
 }
 
 const createSessionPlaceOnline = `-- name: CreateSessionPlaceOnline :one
-INSERT INTO session_places_online(type, url, session_place_id)
+INSERT INTO session_places_online(type, link, session_place_id)
 VALUES ($1, $2, $3)
-RETURNING id, type, url, session_place_id, created_at, updated_at
+RETURNING id, type, link, session_place_id, created_at, updated_at
 `
 
 type CreateSessionPlaceOnlineParams struct {
 	Type           string `db:"type" json:"type"`
-	Url            string `db:"url" json:"url"`
+	Link           string `db:"link" json:"link"`
 	SessionPlaceID uint64 `json:"session_place_id"`
 }
 
 func (q *Queries) CreateSessionPlaceOnline(ctx context.Context, arg CreateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error) {
-	row := q.db.QueryRowContext(ctx, createSessionPlaceOnline, arg.Type, arg.Url, arg.SessionPlaceID)
+	row := q.db.QueryRowContext(ctx, createSessionPlaceOnline, arg.Type, arg.Link, arg.SessionPlaceID)
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
-		&i.Url,
+		&i.Platform,
+		&i.Link,
 		&i.SessionPlaceID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -166,7 +167,7 @@ func (q *Queries) UpdateSessionPlace(ctx context.Context, arg UpdateSessionPlace
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -185,11 +186,15 @@ func (q *Queries) GetSessionPlaceFromSession(ctx context.Context, sessionID uint
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
@@ -209,7 +214,7 @@ func (q *Queries) GetSessionPlace(ctx context.Context, arg GetSessionPlaceParams
 	var i models.SessionPlace
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
+		&i.PlaceType,
 		&i.SessionID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -239,6 +244,10 @@ func (q *Queries) GetSessionPlaceGivenVenue(ctx context.Context, arg GetSessionP
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
@@ -259,6 +268,10 @@ func (q *Queries) GetSessionPlaceGivenVenueFromSessionPlace(ctx context.Context,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
@@ -282,6 +295,10 @@ func (q *Queries) GetSessionPlaceMemberHome(ctx context.Context, arg GetSessionP
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
@@ -300,11 +317,15 @@ func (q *Queries) GetSessionPlaceMemberHomeFromSessionPlace(ctx context.Context,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
 const getSessionPlaceOnline = `-- name: GetSessionPlaceOnline :one
-SELECT id, type, url, session_place_id, created_at, updated_at
+SELECT id, type, link, session_place_id, created_at, updated_at
 FROM session_places_online
 WHERE id = $1 AND session_place_id = $2
 `
@@ -319,17 +340,21 @@ func (q *Queries) GetSessionPlaceOnline(ctx context.Context, arg GetSessionPlace
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
-		&i.Url,
+		&i.Platform,
+		&i.Link,
 		&i.SessionPlaceID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
 const getSessionPlaceOnlineFromSessionPlace = `-- name: GetSessionPlaceOnlineFromSessionPlace :one
-SELECT id, type, url, session_place_id, created_at, updated_at
+SELECT id, type, link, session_place_id, created_at, updated_at
 FROM session_places_online
 WHERE session_place_id = $1
 `
@@ -339,12 +364,16 @@ func (q *Queries) GetSessionPlaceOnlineFromSessionPlace(ctx context.Context, ses
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
-		&i.Url,
+		&i.Platform,
+		&i.Link,
 		&i.SessionPlaceID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+
+	if err != nil && err == sql.ErrNoRows {
+		return nil, nil
+	}
 	return &i, err
 }
 
@@ -383,16 +412,16 @@ func (q *Queries) UpdateSessionPlaceGivenVenue(ctx context.Context, arg UpdateSe
 
 const updateSessionPlaceOnline = `-- name: UpdateSessionPlaceOnline :one
 UPDATE session_places_online
-SET type = $3, url = $4
+SET type = $3, link = $4
 WHERE id = $1 AND session_place_id = $2
-RETURNING id, type, url, session_place_id, created_at, updated_at
+RETURNING id, type, link, session_place_id, created_at, updated_at
 `
 
 type UpdateSessionPlaceOnlineParams struct {
 	ID             uint64 `json:"id"`
 	SessionPlaceID uint64 `json:"session_place_id"`
 	Type           string `json:"type"`
-	Url            string `json:"url"`
+	Link           string `json:"link"`
 }
 
 func (q *Queries) UpdateSessionPlaceOnline(ctx context.Context, arg UpdateSessionPlaceOnlineParams) (*models.SessionPlacesOnline, error) {
@@ -400,13 +429,13 @@ func (q *Queries) UpdateSessionPlaceOnline(ctx context.Context, arg UpdateSessio
 		arg.ID,
 		arg.SessionPlaceID,
 		arg.Type,
-		arg.Url,
+		arg.Link,
 	)
 	var i models.SessionPlacesOnline
 	err := row.Scan(
 		&i.ID,
-		&i.Type,
-		&i.Url,
+		&i.Platform,
+		&i.Link,
 		&i.SessionPlaceID,
 		&i.CreatedAt,
 		&i.UpdatedAt,

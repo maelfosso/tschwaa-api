@@ -2,7 +2,9 @@ package storage
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 
 	"tschwaa.com/api/common"
 	"tschwaa.com/api/models"
@@ -14,16 +16,25 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		sessionPlace, err := q.GetSessionPlaceFromSession(ctx, sessionID)
+
 		if err != nil {
-			return utils.Fail(
-				"error when getting session place",
-				"ERR_CRT_SES_01",
-				err,
-			)
+			if err == sql.ErrNoRows {
+				return nil
+			} else {
+				return utils.Fail(
+					"error when getting session place",
+					"ERR_CRT_SES_01",
+					err,
+				)
+			}
 		}
 
-		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
-			subSessionPlace, err = q.GetSessionPlaceOnlineFromSessionPlace(ctx, sessionPlace.ID)
+		if sessionPlace == nil {
+			return utils.Fail("no session place", "ERR_CRT_SES_02", nil)
+		}
+
+		if sessionPlace.PlaceType == common.SESSION_PLACE_ONLINE {
+			_subSessionPlace, err := q.GetSessionPlaceOnlineFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
@@ -32,9 +43,27 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 					err,
 				)
 			}
+
 			// TODO: check if subSessionPlace exists
-		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
-			subSessionPlace, err = q.GetSessionPlaceGivenVenueFromSessionPlace(ctx, sessionPlace.ID)
+			if _subSessionPlace == nil {
+				subSessionPlace = models.SessionPlacesOnline{
+					SessionPlace: sessionPlace,
+
+					SessionPlaceID: sessionPlace.ID,
+				}
+			} else {
+				subSessionPlace = models.SessionPlacesOnline{
+					SessionPlaceID: sessionPlace.ID,
+
+					ID:        _subSessionPlace.ID,
+					Platform:  _subSessionPlace.Platform,
+					Link:      _subSessionPlace.Link,
+					CreatedAt: _subSessionPlace.CreatedAt,
+					UpdatedAt: _subSessionPlace.UpdatedAt,
+				}
+			}
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_GIVEN_VENUE {
+			_subSessionPlace, err := q.GetSessionPlaceGivenVenueFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
@@ -44,8 +73,27 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 				)
 			}
 			// TODO: check if subSessionPlace exists
-		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
-			subSessionPlace, err = q.GetSessionPlaceMemberHomeFromSessionPlace(ctx, sessionPlace.ID)
+			if _subSessionPlace == nil {
+				subSessionPlace = models.SessionPlacesGivenVenue{
+					SessionPlace: sessionPlace,
+
+					SessionPlaceID: sessionPlace.ID,
+				}
+			} else {
+				subSessionPlace = models.SessionPlacesGivenVenue{
+					SessionPlace: sessionPlace,
+
+					SessionPlaceID: sessionPlace.ID,
+
+					ID:        _subSessionPlace.ID,
+					Name:      _subSessionPlace.Name,
+					Location:  _subSessionPlace.Location,
+					CreatedAt: _subSessionPlace.CreatedAt,
+					UpdatedAt: _subSessionPlace.UpdatedAt,
+				}
+			}
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_MEMBER_HOME {
+			_subSessionPlace, err := q.GetSessionPlaceMemberHomeFromSessionPlace(ctx, sessionPlace.ID)
 
 			if err != nil {
 				return utils.Fail(
@@ -55,6 +103,23 @@ func (store *SQLStorage) GetSessionPlaceTx(ctx context.Context, sessionID uint64
 				)
 			}
 			// TODO: check if subSessionPlace exists
+			if _subSessionPlace == nil {
+				subSessionPlace = models.SessionPlacesMemberHome{
+					SessionPlace: sessionPlace,
+
+					SessionPlaceID: sessionPlace.ID,
+				}
+			} else {
+				subSessionPlace = models.SessionPlacesMemberHome{
+					SessionPlace: sessionPlace,
+
+					SessionPlaceID: sessionPlace.ID,
+
+					ID:        _subSessionPlace.ID,
+					CreatedAt: _subSessionPlace.CreatedAt,
+					UpdatedAt: _subSessionPlace.UpdatedAt,
+				}
+			}
 		}
 
 		return nil
@@ -121,11 +186,13 @@ type CreateSessionPlaceTxParams struct {
 	SessionID        uint64
 	SessionPlaceType string
 
-	Type *string
-	Url  *string
+	Platform *string
+	Link     *string
 
 	Name     *string
 	Location *string
+
+	Choice *string
 }
 
 func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSessionPlaceTxParams) (models.ISessionPlace, error) {
@@ -144,11 +211,11 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 			)
 		}
 
-		if sessionPlace.Type == common.SESSION_PLACE_ONLINE {
+		if sessionPlace.PlaceType == common.SESSION_PLACE_ONLINE {
 			iSessionPlace, err = store.CreateSessionPlaceOnline(ctx, CreateSessionPlaceOnlineParams{
 				SessionPlaceID: sessionPlace.ID,
-				Type:           *arg.Type,
-				Url:            *arg.Url,
+				Type:           *arg.Platform,
+				Link:           *arg.Link,
 			})
 			if err != nil {
 				return utils.Fail(
@@ -157,7 +224,7 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 					err,
 				)
 			}
-		} else if sessionPlace.Type == common.SESSION_PLACE_GIVEN_VENUE {
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_GIVEN_VENUE {
 			iSessionPlace, err = store.CreateSessionPlaceGivenVenue(ctx, CreateSessionPlaceGivenVenueParams{
 				SessionPlaceID: sessionPlace.ID,
 				Name:           *arg.Name,
@@ -165,16 +232,16 @@ func (store *SQLStorage) CreateSessionPlaceTx(ctx context.Context, arg CreateSes
 			})
 			if err != nil {
 				return utils.Fail(
-					"error when creating online session place",
+					"error when creating given venue session place",
 					"ERR_CRT_SES_01",
 					err,
 				)
 			}
-		} else if sessionPlace.Type == common.SESSION_PLACE_MEMBER_HOME {
+		} else if sessionPlace.PlaceType == common.SESSION_PLACE_MEMBER_HOME {
 			iSessionPlace, err = store.CreateSessionPlaceMemberHome(ctx, sessionPlace.ID)
 			if err != nil {
 				return utils.Fail(
-					"error when creating online session place",
+					"error when creating member home session place",
 					"ERR_CRT_SES_01",
 					err,
 				)
@@ -191,8 +258,8 @@ type ChangeSessionPlaceParams struct {
 	SessionID        uint64
 	SessionPlaceType string
 
-	Type *string
-	Url  *string
+	Platform *string
+	Link     *string
 
 	Name     *string
 	Location *string
@@ -203,6 +270,10 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 
 	err := store.execTx(ctx, func(q *Queries) error {
 		iSessionPlace, err := store.GetSessionPlaceTx(ctx, arg.SessionID)
+		log.Println("GetSessionPlaceTx")
+		log.Println("iSessionPlace : ", iSessionPlace)
+		log.Println("err: ", err)
+		log.Println(iSessionPlace != nil, utils.CheckNilInterface(iSessionPlace))
 		if err != nil {
 			return utils.Fail(
 				fmt.Sprintf("error when getting full session place of session[%d]: %w", arg.SessionID, err),
@@ -210,7 +281,8 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 				err,
 			)
 		}
-		if iSessionPlace != nil {
+		if !utils.CheckNilInterface(iSessionPlace) {
+			log.Println("DeleteSessionPlaceTx")
 			err := store.DeleteSessionPlaceTx(ctx, DeleteSessionPlaceTxParams{
 				ISessionPlace: iSessionPlace,
 				SessionID:     arg.SessionID,
@@ -224,12 +296,13 @@ func (store *SQLStorage) ChangeSessionPlaceTx(ctx context.Context, arg ChangeSes
 			}
 		}
 
+		log.Println("CreateSessionPlaceTx")
 		iSessionPlace, err = store.CreateSessionPlaceTx(ctx, CreateSessionPlaceTxParams{
 			SessionID:        arg.SessionID,
 			SessionPlaceType: arg.SessionPlaceType,
 
-			Type: arg.Type,
-			Url:  arg.Url,
+			Platform: arg.Platform,
+			Link:     arg.Link,
 
 			Name:     arg.Name,
 			Location: arg.Location,

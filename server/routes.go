@@ -70,7 +70,7 @@ func (s *Server) setupRoutes() {
 							handlers.RemoveMemberFromSession(r, s.database.Storage)
 						})
 
-						r.Route("/place", func(r chi.Router) {
+						r.Route("/places", func(r chi.Router) {
 							handlers.GetPlaceOfSession(r, s.database.Storage)
 							handlers.UpdatePlaceOfSession(r, s.database.Storage)
 							handlers.ChangePlaceOfSession(r, s.database.Storage)
